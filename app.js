@@ -128,7 +128,10 @@
   function cargarJoven(cod) { return rpc("app_datos", { p_codigo: cod }).then(function (d) { DATOS = d; vigilar(); return d; }); }
   function cargarCat(cod) { return rpc("catequista_datos", { p_codigo: cod }).then(function (d) { CAT = d; return d; }); }
   btnSalir.addEventListener("click", function () {
-    borrar("confi_codigo"); borrarS("confi_cat"); DATOS = null; CAT = null; location.hash = "#/";
+    borrar("confi_codigo"); borrarS("confi_cat"); DATOS = null; CAT = null;
+    /* al salir, el móvil olvida también las respuestas guardadas para mostrarlas («Tu respuesta») */
+    try { Object.keys(localStorage).forEach(function (k) { if (/^confi_(r|envio|enviado)_/.test(k)) localStorage.removeItem(k); }); } catch (e) {}
+    location.hash = "#/";
   });
 
   /* ---------- vídeo cifrado ---------- */
