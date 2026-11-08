@@ -259,7 +259,9 @@
     app.appendChild(el("span", { class: "etiqueta", text: "📘 Material · Sesión " + s.numero }));
     app.appendChild(el("h1", { text: s.titulo }));
     var boton = abierta(s) ? el("a", { class: "boton oro", href: "#/joven/sesion/" + s.numero + "/responder", style: "text-align:center;text-decoration:none;margin:8px 0 16px", text: leer(claveEnviado(s)) ? "✏️  Ya has respondido: revisar o cambiar" : "✍️  Responder a las preguntas de hoy" }) : null;
-    materialAlumno(app, s, DATOS.clave_video, { botonResponder: boton, ocultarActividades: abierta(s) });
+    var enviada = DATOS.resultados.some(function (r) { return r.sesion === s.numero; });
+    materialAlumno(app, s, DATOS.clave_video, { botonResponder: boton, ocultarActividades: abierta(s) || !enviada });
+    if (!abierta(s) && !enviada) app.appendChild(el("p", { class: "aviso-cat", text: "🔒 Las actividades y el cuestionario de esta sesión aparecerán cuando tu catequista inicie la sesión." }));
   }
   function jovenGrupo(num) {
     var r = DATOS.resultados.filter(function (x) { return String(x.sesion) === String(num); })[0];
@@ -385,7 +387,7 @@
     var m = s.catequista || {};
     if (pest === "guion") catGuion(cont, m);
     else if (pest === "dialogo") catDialogo(cont, m);
-    else if (pest === "alumno") { cont.appendChild(el("p", { class: "aviso-cat", text: "Esto es exactamente lo que ven los jóvenes en su departamento." })); materialAlumno(cont, s, CAT.clave_video); }
+    else if (pest === "alumno") { cont.appendChild(el("p", { class: "aviso-cat", text: "Esto es lo que ven los jóvenes. El cuestionario con soluciones (al final) solo les aparece después de que valides y envíes las respuestas; durante la sesión responden en el formulario." })); materialAlumno(cont, s, CAT.clave_video); }
     else if (pest === "respuestas") catRespuestas(cont, s);
   }
   function catGuion(cont, m) {
