@@ -445,6 +445,12 @@
     return caja;
   }
   function catRespuestas(cont, s) {
+    var bAct = el("button", { class: "boton", type: "button", style: "margin:12px 0 0", text: "🔄 Actualizar respuestas" });
+    bAct.addEventListener("click", function () {
+      bAct.disabled = true; bAct.textContent = "Actualizando…";
+      recargarCat().then(function () { catSesion(s.numero, "respuestas"); }).catch(function () { bAct.disabled = false; bAct.textContent = "✗ Sin conexión. Reintentar"; });
+    });
+    cont.appendChild(bAct);
     CAT.grupos.forEach(function (g) {
       var x = datosGrupoSesion(g, s);
       cont.appendChild(el("h2", { text: "Grupo " + g.nombre }));
