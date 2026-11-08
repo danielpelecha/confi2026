@@ -295,7 +295,7 @@
     if (!s || !abierta(s)) { app.appendChild(migas("#/joven", "← Inicio")); app.appendChild(el("p", { class: "vacio", text: "Las preguntas de esta sesión ya están cerradas." })); return; }
     app.appendChild(migas("#/joven/sesion/" + s.numero, "← Volver a la sesión"));
     app.appendChild(el("h1", { text: "Tus respuestas · Sesión " + s.numero }));
-    app.appendChild(el("p", { text: "Son anónimas: nadie sabrá quién ha escrito cada respuesta. Contesta con sinceridad." }));
+    app.appendChild(el("p", { text: "Son anónimas: nadie sabrá quién ha escrito cada respuesta. Después de la sesión, tu catequista las revisará y el grupo podrá leerlas, sin nombres. Contesta con sinceridad." }));
     var previas = null;
     try { previas = JSON.parse(leer(claveEnviado(s) + "_resp") || "null"); } catch (e) {}
     var envioPrevio = leer(claveEnviado(s) + "_envio");
