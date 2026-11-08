@@ -466,7 +466,8 @@
     CAT.grupos.forEach(function (g) {
       var x = datosGrupoSesion(g, s);
       cont.appendChild(el("h2", { text: "Grupo " + g.nombre }));
-      cont.appendChild(el("p", { text: x.envios + (x.envios === 1 ? " joven ha respondido en la app." : " jóvenes han respondido en la app.") }));
+      var porWhatsapp = x.respuestas.some(function (r) { return r.origen === "whatsapp"; });
+      cont.appendChild(el("p", { text: porWhatsapp ? "Respuestas recogidas por WhatsApp, antes de la app: " + x.envios + " envíos (el cuestionario y el reto se enviaron por separado). Están ocultas al grupo: los jóvenes ven el resumen que ya se publicó." : x.envios + (x.envios === 1 ? " joven ha respondido en la app." : " jóvenes han respondido en la app.") }));
       if (x.envios) cont.appendChild(el("p", { class: "fecha", text: "Revisa las respuestas antes de enviarlas. Puedes corregir una falta, quitar un nombre propio u ocultar una respuesta que no deba ver el grupo. Cada joven solo ve las respuestas agrupadas por pregunta, sin saber de quién son." }));
       var porP = {};
       x.respuestas.forEach(function (r) { (porP[r.pregunta] = porP[r.pregunta] || []).push(r); });
@@ -576,13 +577,14 @@
       var x = datosGrupoSesion(g, s);
       var rvf = x.respuestas.filter(function (r) { return vfs.some(function (p) { return p.id === r.pregunta; }); });
       var bien = rvf.filter(function (r) { return vfs.some(function (p) { return p.id === r.pregunta && p.correcta === r.valor; }); }).length;
-      var items = [{ valor: String(x.envios || 0), texto: "respondieron en la app" }];
+      var wa = x.respuestas.some(function (r) { return r.origen === "whatsapp"; });
+      var items = [{ valor: String(x.envios || 0), texto: wa ? "envíos por WhatsApp (cuestionario y reto por separado)" : "respondieron en la app" }];
       if (rvf.length) items.push({ valor: Math.round(bien / rvf.length * 100) + " %", texto: "de aciertos en el verdadero o falso" });
       cont.appendChild(el("section", { class: "tarjeta" }, [
         el("span", { class: "etiqueta", text: "Grupo " + nombreGrupo(g) + (x.fecha ? " · " + fechaCorta(x.fecha) : "") }),
         el("div", { class: "cifras", style: "margin-top:6px" }, items.map(function (i) { return el("div", { class: "cifra" }, [el("b", { text: i.valor }), el("span", { text: i.texto })]); }))
       ]));
-      if (!x.envios && x.resumen && x.resumen.bloques && x.resumen.bloques.length) {
+      if ((wa || !x.envios) && x.resumen && x.resumen.bloques && x.resumen.bloques.length) {
         var det = el("details", { class: "tarjeta" }, [el("summary", { text: "Esta sesión se trabajó antes de la app (por WhatsApp). Ver el resumen que se hizo" })]);
         x.resumen.bloques.forEach(function (b) { var n = bloque(b); if (n) det.appendChild(n); });
         cont.appendChild(det);
