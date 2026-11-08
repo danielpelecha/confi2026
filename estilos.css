@@ -59,6 +59,13 @@ a.boton{text-decoration:none;text-align:center}
 select{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1.5px solid var(--borde);border-radius:12px;background:var(--blanco);color:var(--tinta)}
 body.modo-cat .cabecera{background:#2b1d0e}
 body.modo-cat .logo{background:#4a3317}
+.resp .valor{flex:1;min-width:0;white-space:pre-wrap}
+.resp .acciones{display:flex;flex-direction:column;gap:6px}
+.resp.oculta .valor{opacity:.5;text-decoration:line-through}
+button.mini{border:1.5px solid var(--borde);background:var(--blanco);color:var(--tinta);border-radius:8px;padding:6px 10px;font:inherit;font-size:14px;cursor:pointer}
+button.mini.oro{background:var(--oro2);border-color:var(--oro2);color:var(--navy);font-weight:700}
+.control.curso{border-left:5px solid var(--ok)}
+.control.cerrada{border-left:5px solid var(--suave)}
 .fuente{font-size:14px;color:var(--suave);margin:8px 0 0}
 .fuente a{color:var(--oro)}
 .cita{border-left:5px solid var(--navy);background:#fff}

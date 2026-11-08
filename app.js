@@ -231,7 +231,7 @@
     app.appendChild(el("h1", { text: "Hola 👋" }));
     app.appendChild(el("p", { text: "Aquí tienes el material de cada sesión y, aparte, lo que hemos compartido como grupo." }));
     var ab = DATOS.material.filter(abierta)[0];
-    if (ab && !leer(claveEnviado(ab))) app.appendChild(el("a", { class: "boton oro", href: "#/joven/sesion/" + ab.numero + "/responder", style: "text-align:center;text-decoration:none;margin:12px 0", text: "✍️  Responder a las preguntas de la Sesión " + ab.numero }));
+    if (ab) app.appendChild(el("a", { class: "boton oro", href: "#/joven/sesion/" + ab.numero + "/responder", style: "margin:12px 0", text: leer(claveEnviado(ab)) ? "✏️  Revisar o cambiar mis respuestas de la Sesión " + ab.numero : "✍️  Responder a las preguntas de la Sesión " + ab.numero }));
     app.appendChild(el("h2", { text: "📘 Material de catequesis" }));
     DATOS.material.slice().sort(function (a, b) { return a.numero - b.numero; }).forEach(function (s) {
       app.appendChild(el("a", { class: "tarjeta", href: "#/joven/sesion/" + s.numero }, [
@@ -258,7 +258,7 @@
     if (!s) { app.appendChild(el("p", { class: "vacio", text: "No encuentro esa sesión." })); return; }
     app.appendChild(el("span", { class: "etiqueta", text: "📘 Material · Sesión " + s.numero }));
     app.appendChild(el("h1", { text: s.titulo }));
-    var boton = abierta(s) ? el("a", { class: "boton oro", href: "#/joven/sesion/" + s.numero + "/responder", style: "text-align:center;text-decoration:none;margin:8px 0 16px", text: leer(claveEnviado(s)) ? "Ya has respondido ✓ (ver de nuevo)" : "✍️  Responder a las preguntas de hoy" }) : null;
+    var boton = abierta(s) ? el("a", { class: "boton oro", href: "#/joven/sesion/" + s.numero + "/responder", style: "text-align:center;text-decoration:none;margin:8px 0 16px", text: leer(claveEnviado(s)) ? "✏️  Ya has respondido: revisar o cambiar" : "✍️  Responder a las preguntas de hoy" }) : null;
     materialAlumno(app, s, DATOS.clave_video, { botonResponder: boton, ocultarActividades: abierta(s) });
   }
   function jovenGrupo(num) {
@@ -271,7 +271,23 @@
     if (r.fecha) app.appendChild(el("p", { class: "fecha", text: fechaBonita(r.fecha) }));
     app.appendChild(el("p", { text: "Lo que compartimos entre todos. Siempre de forma anónima." }));
     ((r.contenido && r.contenido.bloques) || []).forEach(function (b) { var n = bloque(b); if (n) app.appendChild(n); });
+    var s = DATOS.material.filter(function (x) { return x.numero === r.sesion; })[0];
+    if (s && r.respuestas && r.respuestas.length) respuestasGrupo(app, s, r.respuestas, r.envios);
     if (r.sobres.length) app.appendChild(sobres(r.sobres));
+  }
+  /* Respuestas validadas por el catequista: agrupadas por pregunta, sin saber de quién es cada una */
+  function respuestasGrupo(cont, s, respuestas, envios) {
+    var porP = {};
+    respuestas.forEach(function (x) { (porP[x.pregunta] = porP[x.pregunta] || []).push(x.valor); });
+    cont.appendChild(el("h2", { text: "Lo que respondimos" }));
+    if (envios) cont.appendChild(el("div", { class: "cifras" }, [el("div", { class: "cifra" }, [el("b", { text: String(envios) }), el("span", { text: envios === 1 ? "joven respondió" : "jóvenes respondieron" })])]));
+    var vf = s.preguntas.filter(function (p) { return p.tipo === "vf" && porP[p.id]; });
+    if (vf.length) cont.appendChild(el("section", { class: "tarjeta" }, [el("b", { text: "Aciertos del grupo en el verdadero o falso" })].concat(vf.map(function (p) {
+      var rs = porP[p.id]; return barraFila(p.enunciado, rs.filter(function (v) { return v === p.correcta; }).length, rs.length);
+    }))));
+    s.preguntas.filter(function (p) { return p.tipo !== "vf" && porP[p.id]; }).forEach(function (p) {
+      cont.appendChild(el("section", { class: "tarjeta" }, [el("b", { text: p.enunciado }), el("ul", { class: "puntos" }, porP[p.id].map(function (v) { return el("li", { text: v }); }))]));
+    });
   }
   function jovenResponder(num) {
     var s = DATOS.material.filter(function (x) { return String(x.numero) === String(num); })[0];
@@ -280,26 +296,35 @@
     app.appendChild(migas("#/joven/sesion/" + s.numero, "← Volver a la sesión"));
     app.appendChild(el("h1", { text: "Tus respuestas · Sesión " + s.numero }));
     app.appendChild(el("p", { text: "Son anónimas: nadie sabrá quién ha escrito cada respuesta. Contesta con sinceridad." }));
-    var resp = {}, cajasVF = {};
+    var previas = null;
+    try { previas = JSON.parse(leer(claveEnviado(s) + "_resp") || "null"); } catch (e) {}
+    var envioPrevio = leer(claveEnviado(s) + "_envio");
+    if (previas) app.appendChild(el("p", { class: "aviso-cat", text: "Ya enviaste tus respuestas. Tu catequista ha abierto la sesión: puedes cambiar lo que quieras y volver a enviarlas. Se sustituirán las anteriores." }));
+    var resp = previas ? Object.assign({}, previas) : {}, cajasVF = {};
     var form = el("form");
     s.preguntas.forEach(function (p) {
-      if (p.tipo === "vf") { var c = preguntaVF(p, false, function (v) { resp[p.id] = v; }); cajasVF[p.id] = c; form.appendChild(c); }
-      else {
+      if (p.tipo === "vf") {
+        var c = preguntaVF(p, false, function (v) { resp[p.id] = v; }); cajasVF[p.id] = c; form.appendChild(c);
+        if (resp[p.id]) { var bt = c.querySelector('[data-v="' + resp[p.id] + '"]'); if (bt) bt.setAttribute("aria-pressed", "true"); }
+      } else {
         var id = "p" + p.id, ta = el("textarea", { id: id, maxlength: "2000" });
+        if (resp[p.id]) ta.value = resp[p.id];
         ta.addEventListener("input", function () { resp[p.id] = ta.value; });
         form.appendChild(el("div", { class: "pregunta tarjeta" }, [el("label", { for: id }, [p.enunciado, p.opcional ? el("span", { class: "opc", text: " (opcional)" }) : null]), ta]));
       }
     });
     var msg = el("p", { class: "error" });
-    var boton = el("button", { class: "boton", type: "submit", text: "Enviar mis respuestas" });
+    var boton = el("button", { class: "boton", type: "submit", text: previas ? "Volver a enviar mis respuestas" : "Enviar mis respuestas" });
     form.appendChild(msg); form.appendChild(boton);
     form.addEventListener("submit", function (ev) {
       ev.preventDefault();
       var faltan = s.preguntas.filter(function (p) { return !p.opcional && !(resp[p.id] && String(resp[p.id]).trim()); });
       if (faltan.length) { msg.textContent = "Te falta responder " + faltan.length + (faltan.length === 1 ? " pregunta." : " preguntas."); return; }
       boton.disabled = true; boton.textContent = "Enviando…"; msg.textContent = "";
-      rpc("enviar_respuestas", { p_codigo: leer("confi_codigo"), p_sesion: s.id, p_respuestas: resp }).then(function () {
+      rpc("enviar_respuestas", { p_codigo: leer("confi_codigo"), p_sesion: s.id, p_respuestas: resp, p_envio: envioPrevio || null }).then(function (r) {
         guardar(claveEnviado(s), "1");
+        guardar(claveEnviado(s) + "_resp", JSON.stringify(resp));
+        if (r && r.envio) guardar(claveEnviado(s) + "_envio", r.envio);
         Object.keys(cajasVF).forEach(function (k) { cajasVF[k]._corregir(resp[k]); });
         form.querySelectorAll("textarea").forEach(function (t) { t.disabled = true; });
         boton.remove();
@@ -324,26 +349,16 @@
     app.appendChild(el("h1", { text: "Hola, catequista" }));
     app.appendChild(el("p", { text: "Aquí tienes el guion de cada sesión, las orientaciones para el diálogo, el material que ven los jóvenes y sus respuestas." }));
     CAT.grupos.forEach(function (g) {
-      var sel = el("select", { "aria-label": "Sesión con preguntas abiertas" }, [el("option", { value: "", text: "Ninguna (preguntas cerradas)" })].concat(CAT.material.map(function (s) {
-        var o = el("option", { value: String(s.numero), text: "Sesión " + s.numero + " · " + s.titulo }); if (Number(g.sesion_abierta) === s.numero) o.selected = true; return o;
-      })));
-      var estado = el("span", { class: "fecha" });
-      sel.addEventListener("change", function () {
-        estado.textContent = " Guardando…";
-        rpc("catequista_abrir", { p_codigo: codCat(), p_grupo: g.nombre, p_numero: sel.value ? Number(sel.value) : null })
-          .then(function () { estado.textContent = " ✓ Guardado"; return recargarCat(); })
-          .catch(function () { estado.textContent = " ✗ No se ha podido guardar"; });
-      });
       app.appendChild(el("section", { class: "tarjeta" }, [
         el("span", { class: "etiqueta", text: "Grupo " + g.nombre }),
-        el("p", { text: "Preguntas abiertas para los jóvenes en:", style: "margin:4px 0 6px" }), sel, estado
+        el("p", { style: "margin:4px 0 0", text: g.sesion_abierta ? "🟢 Sesión " + g.sesion_abierta + " en curso: los jóvenes pueden responder." : "⚪ Ninguna sesión en curso. Entra en una sesión para iniciarla." })
       ]));
     });
     app.appendChild(el("h2", { text: "Sesiones" }));
     CAT.material.forEach(function (s) {
       var info = CAT.grupos.map(function (g) {
         var x = g.sesiones.filter(function (y) { return y.numero === s.numero; })[0] || {};
-        return g.nombre + ": " + (x.envios || 0) + " respuestas · " + (x.publicado ? "resumen publicado" : "resumen sin publicar");
+        return g.nombre + ": " + estadoSesion(g, s, x).texto + " · " + (x.envios || 0) + " respuestas" + (x.publicado ? " · enviadas a los jóvenes ✓" : "");
       }).join(" · ");
       app.appendChild(el("a", { class: "tarjeta", href: "#/catequista/sesion/" + s.numero + "/guion" }, [
         el("span", { class: "etiqueta", text: "Sesión " + s.numero }),
@@ -361,6 +376,7 @@
     pest = pest || "guion";
     app.appendChild(el("span", { class: "etiqueta", text: "📋 Catequista · Sesión " + s.numero }));
     app.appendChild(el("h1", { text: s.titulo }));
+    CAT.grupos.forEach(function (g) { app.appendChild(controlSesion(g, s)); });
     app.appendChild(el("nav", { class: "pestanas" }, PESTANAS.map(function (p) {
       return el("a", { href: "#/catequista/sesion/" + s.numero + "/" + p[0], class: p[0] === pest ? "activa" : null, text: p[1] });
     })));
@@ -396,14 +412,44 @@
     });
     if (!m.dialogo || !m.dialogo.length) cont.appendChild(el("p", { class: "vacio", text: "Esta sesión aún no tiene preguntas para dialogar." }));
   }
+  /* Estado de una sesión para un grupo: no iniciada, en curso, cerrada */
+  function estadoSesion(g, s, x) {
+    if (Number(g.sesion_abierta) === s.numero) return { clave: "curso", texto: "🟢 En curso" };
+    if (x && (x.envios || x.publicado)) return { clave: "cerrada", texto: "🔒 Cerrada" };
+    return { clave: "nueva", texto: "⚪ Sin iniciar" };
+  }
+  function datosGrupoSesion(g, s) { return g.sesiones.filter(function (y) { return y.numero === s.numero; })[0] || { envios: 0, respuestas: [] }; }
+  function cambiarSesion(g, numero, boton, s, pest) {
+    boton.disabled = true;
+    rpc("catequista_abrir", { p_codigo: codCat(), p_grupo: g.nombre, p_numero: numero })
+      .then(recargarCat).then(function () { catSesion(s.numero, pest); })
+      .catch(function () { boton.disabled = false; boton.textContent = "✗ No se ha podido guardar. Reintentar"; });
+  }
+  function controlSesion(g, s) {
+    var x = datosGrupoSesion(g, s), e = estadoSesion(g, s, x);
+    var pest = (location.hash.split("/")[4]) || "guion";
+    var caja = el("section", { class: "tarjeta control " + e.clave }, [
+      el("span", { class: "etiqueta", text: "Grupo " + g.nombre }),
+      el("p", { style: "margin:2px 0 8px", text: e.texto + (e.clave === "curso" ? ": los jóvenes ya pueden responder en su móvil." : e.clave === "cerrada" ? ": los jóvenes ya no pueden responder." : ": los jóvenes aún no pueden responder.") })
+    ]);
+    var otra = g.sesion_abierta && Number(g.sesion_abierta) !== s.numero;
+    var b;
+    if (e.clave === "curso") b = el("button", { class: "boton", type: "button", text: "🔒 Cerrar la sesión" });
+    else b = el("button", { class: "boton oro", type: "button", text: e.clave === "cerrada" ? "🔓 Reabrir la sesión" : "▶ Iniciar la sesión" });
+    b.addEventListener("click", function () { cambiarSesion(g, e.clave === "curso" ? null : s.numero, b, s, pest); });
+    caja.appendChild(b);
+    if (e.clave === "cerrada") caja.appendChild(el("p", { class: "fecha", style: "margin:6px 0 0", text: "Reabrir permite que los jóvenes corrijan o completen sus respuestas. Ciérrala de nuevo al terminar." }));
+    if (otra && e.clave !== "curso") caja.appendChild(el("p", { class: "fecha", style: "margin:6px 0 0", text: "Ahora está en curso la Sesión " + g.sesion_abierta + ". Al iniciar esta, aquella se cerrará." }));
+    return caja;
+  }
   function catRespuestas(cont, s) {
     CAT.grupos.forEach(function (g) {
-      var x = g.sesiones.filter(function (y) { return y.numero === s.numero; })[0] || { envios: 0, respuestas: [] };
+      var x = datosGrupoSesion(g, s);
       cont.appendChild(el("h2", { text: "Grupo " + g.nombre }));
-      cont.appendChild(el("p", { text: x.envios + (x.envios === 1 ? " joven ha respondido en la app." : " jóvenes han respondido en la app.") + (Number(g.sesion_abierta) === s.numero ? " · Preguntas ABIERTAS" : " · Preguntas cerradas") }));
+      cont.appendChild(el("p", { text: x.envios + (x.envios === 1 ? " joven ha respondido en la app." : " jóvenes han respondido en la app.") }));
+      if (x.envios) cont.appendChild(el("p", { class: "fecha", text: "Revisa las respuestas antes de enviarlas. Puedes corregir una falta, quitar un nombre propio u ocultar una respuesta que no deba ver el grupo. Cada joven solo ve las respuestas agrupadas por pregunta, sin saber de quién son." }));
       var porP = {};
       x.respuestas.forEach(function (r) { (porP[r.pregunta] = porP[r.pregunta] || []).push(r); });
-      var seleccion = {};
       s.preguntas.forEach(function (p) {
         var rs = porP[p.id] || [];
         var c = el("section", { class: "tarjeta" }, [el("b", { text: p.orden + ". " + p.enunciado })]);
@@ -411,44 +457,12 @@
           var bien = rs.filter(function (r) { return r.valor === p.correcta; }).length;
           c.appendChild(rs.length ? barraFila("Aciertos (correcta: " + (p.correcta === "V" ? "verdadero" : "falso") + ")", bien, rs.length) : el("p", { class: "fecha", text: "Sin respuestas todavía." }));
         } else if (!rs.length) c.appendChild(el("p", { class: "fecha", text: "Sin respuestas todavía." }));
-        else {
-          c.appendChild(el("p", { class: "fecha", text: "Marca las respuestas que quieras incluir en el resumen para el grupo." }));
-          rs.forEach(function (r, i) {
-            var id = "s" + p.id + "_" + i, chk = el("input", { type: "checkbox", id: id });
-            chk.addEventListener("change", function () { seleccion[p.id] = seleccion[p.id] || {}; seleccion[p.id][i] = chk.checked ? r.valor : null; });
-            c.appendChild(el("div", { class: "resp" }, [chk, el("label", { for: id }, [el("span", { class: "envio", text: "#" + r.envio + " " }), r.valor])]));
-          });
-        }
+        else rs.forEach(function (r) { c.appendChild(filaRespuesta(r, s)); });
         cont.appendChild(c);
       });
-      /* Publicación */
-      var estado = el("span", { class: "fecha" });
-      var pub = el("section", { class: "tarjeta aviso" }, [el("b", { text: "Resumen para los jóvenes" }),
-        el("p", { text: x.publicado ? "✓ Publicado: los jóvenes lo ven en «Lo que hemos compartido como grupo»." : "Sin publicar: los jóvenes no ven nada de esta sesión.", style: "margin:6px 0" })]);
-      if (x.envios) {
-        var bPub = el("button", { class: "boton oro", type: "button", text: x.publicado ? "Actualizar el resumen publicado" : "Publicar resumen al grupo" });
-        bPub.addEventListener("click", function () {
-          bPub.disabled = true; estado.textContent = " Publicando…";
-          rpc("catequista_publicar", { p_codigo: codCat(), p_grupo: g.nombre, p_numero: s.numero, p_publicado: true, p_contenido: construirResumen(s, x, porP, seleccion) })
-            .then(function () { return recargarCat(); }).then(function () { catSesion(s.numero, "respuestas"); })
-            .catch(function () { bPub.disabled = false; estado.textContent = " ✗ No se ha podido publicar"; });
-        });
-        pub.appendChild(bPub);
-      }
-      if (x.publicado || x.resumen) {
-        var bTog = el("button", { class: "boton", type: "button", style: "margin-top:8px", text: x.publicado ? "Ocultar el resumen a los jóvenes" : "Publicar el resumen guardado" });
-        bTog.addEventListener("click", function () {
-          bTog.disabled = true;
-          rpc("catequista_publicar", { p_codigo: codCat(), p_grupo: g.nombre, p_numero: s.numero, p_publicado: !x.publicado, p_contenido: null })
-            .then(function () { return recargarCat(); }).then(function () { catSesion(s.numero, "respuestas"); })
-            .catch(function () { bTog.disabled = false; estado.textContent = " ✗ Error"; });
-        });
-        pub.appendChild(bTog);
-      }
-      pub.appendChild(estado);
-      cont.appendChild(pub);
-      if (x.resumen && x.resumen.bloques) {
-        cont.appendChild(el("h2", { text: "Vista previa del resumen" }));
+      cont.appendChild(cajaEnviar(g, s, x));
+      if (x.resumen && x.resumen.bloques && x.resumen.bloques.length) {
+        cont.appendChild(el("h2", { text: "Resumen preparado de la sesión" }));
         x.resumen.bloques.forEach(function (b) { var n = bloque(b); if (n) cont.appendChild(n); });
       }
       if (x.respuestas.length) {
@@ -458,22 +472,66 @@
       }
     });
   }
-  function construirResumen(s, x, porP, seleccion) {
-    var bloques = [{ tipo: "cifras", titulo: "Participación", items: [{ valor: String(x.envios), texto: x.envios === 1 ? "joven ha respondido" : "jóvenes han respondido" }] }];
-    var vf = s.preguntas.filter(function (p) { return p.tipo === "vf" && (porP[p.id] || []).length; });
-    if (vf.length) bloques.push({ tipo: "barras", titulo: "Aciertos del grupo en el cuestionario", items: vf.map(function (p) {
-      var rs = porP[p.id]; return { texto: p.enunciado, valor: rs.filter(function (r) { return r.valor === p.correcta; }).length, total: rs.length };
-    }) });
-    s.preguntas.filter(function (p) { return p.tipo !== "vf"; }).forEach(function (p) {
-      var items = Object.keys(seleccion[p.id] || {}).map(function (k) { return seleccion[p.id][k]; }).filter(Boolean);
-      if (items.length) bloques.push({ tipo: "lista", titulo: p.enunciado, items: items });
+  function filaRespuesta(r, s) {
+    var fila = el("div", { class: "resp" + (r.oculta ? " oculta" : "") });
+    var texto = el("div", { class: "valor" }, [el("span", { class: "envio", text: "#" + r.envio + (r.editado ? " · corregida" : "") + (r.oculta ? " · oculta al grupo" : "") }), el("br"), r.valor]);
+    var bEd = el("button", { type: "button", class: "mini", text: "Editar" });
+    var bOc = el("button", { type: "button", class: "mini", text: r.oculta ? "Mostrar" : "Ocultar" });
+    var acciones = el("div", { class: "acciones" }, [bEd, bOc]);
+    function guardarCambio(cuerpo, boton) {
+      boton.disabled = true;
+      rpc("catequista_respuesta", Object.assign({ p_codigo: codCat(), p_id: r.id }, cuerpo))
+        .then(recargarCat).then(function () { var y = window.scrollY; catSesion(s.numero, "respuestas"); window.scrollTo(0, y); })
+        .catch(function () { boton.disabled = false; boton.textContent = "✗ Error"; });
+    }
+    bOc.addEventListener("click", function () { guardarCambio({ p_oculta: !r.oculta }, bOc); });
+    bEd.addEventListener("click", function () {
+      var ta = el("textarea", { maxlength: "2000" }); ta.value = r.valor;
+      var bG = el("button", { type: "button", class: "mini oro", text: "Guardar" });
+      var bC = el("button", { type: "button", class: "mini", text: "Cancelar" });
+      bG.addEventListener("click", function () { guardarCambio({ p_valor: ta.value }, bG); });
+      bC.addEventListener("click", function () { fila.replaceWith(filaRespuesta(r, s)); });
+      texto.replaceWith(el("div", { class: "valor" }, [ta])); acciones.replaceChildren(bG, bC); ta.focus();
     });
-    return { bloques: bloques };
+    fila.appendChild(texto); fila.appendChild(acciones);
+    return fila;
+  }
+  function cajaEnviar(g, s, x) {
+    var abierta = Number(g.sesion_abierta) === s.numero;
+    var caja = el("section", { class: "tarjeta aviso" }, [el("b", { text: "Enviar las respuestas a los jóvenes" })]);
+    var estado = el("p", { class: "fecha" });
+    if (x.publicado) {
+      caja.appendChild(el("p", { style: "margin:6px 0", text: "✓ Enviadas" + (x.enviado ? " el " + new Date(x.enviado).toLocaleString("es-ES", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) : "") + ". Los jóvenes las ven en «Lo que hemos compartido como grupo» y quedan guardadas como material del grupo. Si corriges u ocultas algo, el cambio les llega al momento." }));
+      var bRet = el("button", { class: "boton", type: "button", text: "Retirar el envío" });
+      bRet.addEventListener("click", function () {
+        if (bRet.dataset.ok !== "1") { bRet.dataset.ok = "1"; bRet.textContent = "¿Seguro? Pulsa otra vez para retirarlas"; return; }
+        bRet.disabled = true;
+        rpc("catequista_publicar", { p_codigo: codCat(), p_grupo: g.nombre, p_numero: s.numero, p_publicado: false, p_contenido: null })
+          .then(recargarCat).then(function () { catSesion(s.numero, "respuestas"); })
+          .catch(function () { bRet.disabled = false; estado.textContent = "✗ No se ha podido retirar"; });
+      });
+      caja.appendChild(bRet);
+    } else {
+      caja.appendChild(el("p", { style: "margin:6px 0", text: "Cuando hayas revisado todas las respuestas, dalas por válidas y envíalas. Los jóvenes podrán verlas siempre, y quedarán como material de este grupo." }));
+      if (abierta) caja.appendChild(el("p", { class: "fecha", text: "La sesión sigue en curso: lo normal es cerrarla antes de enviar." }));
+      var bEnv = el("button", { class: "boton oro", type: "button", text: "✅ Validar y enviar respuestas" });
+      if (!x.envios && !x.resumen) bEnv.disabled = true;
+      bEnv.addEventListener("click", function () {
+        if (bEnv.dataset.ok !== "1") { bEnv.dataset.ok = "1"; bEnv.textContent = "¿Las has revisado todas? Pulsa otra vez para enviar"; return; }
+        bEnv.disabled = true; bEnv.textContent = "Enviando…";
+        rpc("catequista_publicar", { p_codigo: codCat(), p_grupo: g.nombre, p_numero: s.numero, p_publicado: true, p_contenido: null })
+          .then(recargarCat).then(function () { catSesion(s.numero, "respuestas"); })
+          .catch(function () { bEnv.disabled = false; bEnv.textContent = "✅ Validar y enviar respuestas"; estado.textContent = "✗ No se ha podido enviar"; });
+      });
+      caja.appendChild(bEnv);
+    }
+    caja.appendChild(estado);
+    return caja;
   }
   function descargarCSV(grupo, s, respuestas) {
     var enun = {}; s.preguntas.forEach(function (p) { enun[p.id] = [p.orden, p.enunciado]; });
-    var filas = [["grupo", "sesion", "pregunta", "enunciado", "envio", "respuesta", "hora"]].concat(respuestas.map(function (r) {
-      var e = enun[r.pregunta] || ["", ""]; return [grupo, s.numero, e[0], e[1], r.envio, r.valor, r.hora];
+    var filas = [["grupo", "sesion", "pregunta", "enunciado", "envio", "respuesta", "hora", "oculta"]].concat(respuestas.map(function (r) {
+      var e = enun[r.pregunta] || ["", ""]; return [grupo, s.numero, e[0], e[1], r.envio, r.valor, r.hora, r.oculta ? "sí" : ""];
     }));
     var txt = "﻿" + filas.map(function (f) { return f.map(function (v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }).join(";"); }).join("\r\n");
     var a = el("a", { href: URL.createObjectURL(new Blob([txt], { type: "text/csv;charset=utf-8" })), download: grupo + "_sesion" + s.numero + "_respuestas.csv" });

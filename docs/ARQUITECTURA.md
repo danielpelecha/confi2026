@@ -43,3 +43,13 @@ Funciones del catequista: `catequista_abrir(codigo, grupo, numero|null)` abre o 
 Modelo de respuestas: el catequista lo ve todo; los jóvenes solo ven el resumen que el catequista decide publicar (participación, aciertos del verdadero/falso y las respuestas abiertas que marque). Nada se publica automáticamente.
 
 Rutas: `#/joven`, `#/joven/sesion/N`, `#/joven/sesion/N/responder`, `#/joven/grupo/N`, `#/catequista`, `#/catequista/sesion/N/{guion|dialogo|alumno|respuestas}`. El código del joven se recuerda en el móvil; el del catequista solo mientras la pestaña está abierta.
+
+## Ciclo de cada sesión (decisión de Daniel, 8-11-2026)
+
+1. **▶ Iniciar la sesión** (catequista): los jóvenes ven el botón amarillo y responden. Solo hay una sesión en curso por grupo.
+2. **🔒 Cerrar la sesión**: nadie puede responder.
+3. **🔓 Reabrir la sesión** (cuando haga falta, también fuera de horario): cada joven ve sus respuestas anteriores en su móvil, puede cambiarlas, y al reenviarlas se sustituyen.
+4. Revisión: el catequista puede **editar** (corregir una falta, quitar un nombre) u **ocultar** cualquier respuesta.
+5. **✅ Validar y enviar respuestas**: todas las respuestas no ocultas pasan a «Lo que hemos compartido como grupo», de forma permanente y anónima, como material de ese grupo. Se puede **retirar el envío**.
+
+Los grupos futuros no ven las respuestas de CONFI2026: cada grupo solo ve las suyas. El material de las sesiones se les muestra limpio.
