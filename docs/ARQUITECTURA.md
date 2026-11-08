@@ -28,3 +28,18 @@
 
 ## Tipos de bloque de contenido
 `texto`, `cita` (texto bíblico literal + referencia), `aviso`, `cifras`, `barras`, `nube`, `lista`.
+
+## Dos departamentos (8-11-2026)
+
+| Departamento | Código | Función RPC | Qué recibe |
+|---|---|---|---|
+| 🎒 Joven | código del grupo (CONFI2026) | `app_datos` | Material del alumno (contenido, vídeo, preguntas, bloque «Para dialogar y reflexionar» sin orientaciones) y **solo** los resúmenes que el catequista ha publicado, más los sobres. |
+| 📋 Catequista | código propio (`config.codigo_catequista`) | `catequista_datos` | Todo lo anterior + `material_catequista` (objetivo, materiales, guion por tiempos, diálogo con orientaciones y apoyo bíblico/Catecismo, notas pastorales) + respuestas anónimas en bruto. |
+
+El material del catequista **nunca viaja** al móvil del joven: lo filtra la base de datos, no la app.
+
+Funciones del catequista: `catequista_abrir(codigo, grupo, numero|null)` abre o cierra las preguntas; `catequista_publicar(codigo, grupo, numero, publicado, contenido|null)` publica u oculta el resumen (con `contenido` null conserva el guardado).
+
+Modelo de respuestas: el catequista lo ve todo; los jóvenes solo ven el resumen que el catequista decide publicar (participación, aciertos del verdadero/falso y las respuestas abiertas que marque). Nada se publica automáticamente.
+
+Rutas: `#/joven`, `#/joven/sesion/N`, `#/joven/sesion/N/responder`, `#/joven/grupo/N`, `#/catequista`, `#/catequista/sesion/N/{guion|dialogo|alumno|respuestas}`. El código del joven se recuerda en el móvil; el del catequista solo mientras la pestaña está abierta.

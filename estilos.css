@@ -44,6 +44,21 @@ input:focus,textarea:focus{outline:2px solid var(--oro2);border-color:var(--oro2
 .fila .pista i{display:block;height:100%;background:var(--oro)}
 .aviso{border-left:5px solid var(--oro2);background:#fff8e6}
 a.tarjeta.resultado{border-left:5px solid var(--navy2)}
+.boton.grande{display:flex;align-items:center;justify-content:center;gap:10px;font-size:20px;padding:18px;text-decoration:none}
+.boton.grande .icono{font-size:26px}
+a.boton{text-decoration:none;text-align:center}
+.pestanas{display:flex;gap:6px;overflow-x:auto;margin:12px 0 4px;padding-bottom:4px}
+.pestanas a{flex:0 0 auto;padding:8px 14px;border-radius:99px;border:1.5px solid var(--borde);background:var(--blanco);color:var(--tinta);text-decoration:none;font-size:15px;font-weight:600}
+.pestanas a.activa{background:var(--navy);border-color:var(--navy);color:#fff}
+.paso .tiempo{float:right;font-weight:700;color:var(--oro)}
+.orientacion{margin:8px 0 0;background:#f2f5fb;border-radius:10px;padding:10px 12px}
+.aviso-cat{background:#f2f5fb;border-radius:10px;padding:10px 12px;font-size:15px}
+.resp{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--borde)}
+.resp input{margin-top:4px;width:20px;height:20px;flex:0 0 auto}
+.resp .envio{color:var(--suave);font-size:13px}
+select{width:100%;font:inherit;font-size:16px;padding:10px 12px;border:1.5px solid var(--borde);border-radius:12px;background:var(--blanco);color:var(--tinta)}
+body.modo-cat .cabecera{background:#2b1d0e}
+body.modo-cat .logo{background:#4a3317}
 .fuente{font-size:14px;color:var(--suave);margin:8px 0 0}
 .fuente a{color:var(--oro)}
 .cita{border-left:5px solid var(--navy);background:#fff}
@@ -79,4 +94,5 @@ ul.puntos li{margin:6px 0}
   :root:not([data-theme=light]) .aviso{background:#2a2414}
   :root:not([data-theme=light]) .fila .pista{background:#2a3549}
   :root:not([data-theme=light]) .migas a{color:#f1e3bd}
+  :root:not([data-theme=light]) .orientacion,:root:not([data-theme=light]) .aviso-cat{background:#22304a}
 }

@@ -16,3 +16,9 @@ Grupo de 13 jóvenes (la mayoría de 14 años). Itinerario de 2 años, 16-17 ses
 - Cierre: vídeo de YouTube insertado (no descargado) «Juan Pablo II No, no tengáis miedo de mirarlo a Él», canal *Juntos con MARIA vivamos en MISERICORDIA*, fragmento 0:00-2:10 — https://www.youtube.com/watch?v=Mkmci96h-Ho
   - Pendiente: pedir permiso al canal o a Vatican Media para tenerlo como archivo propio (útil también para la futura sesión sobre los santos).
   - Dato verificado: la frase «¡No temáis! ¡Abrid de par en par las puertas a Cristo!» es de la homilía de inicio de pontificado (22-10-1978); no aparece en las homilías de las primeras JMJ (Roma 1986, Buenos Aires 1987).
+
+## 8-11-2026 · App en dos departamentos
+- Daniel pide separar el material del joven y el del catequista, con códigos distintos.
+- Las preguntas de diálogo las ven también los jóvenes (para recordar y reflexionar); las orientaciones y respuestas adecuadas solo el catequista.
+- Sesiones 1 y 2 con guion, diálogo orientado y notas pastorales. Las orientaciones deben ser revisadas por Daniel.
+- Punto pendiente de decidir: qué ven los jóvenes de las respuestas del grupo. Se deja preparado el modelo «el catequista publica un resumen elegido».
