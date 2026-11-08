@@ -66,6 +66,8 @@ button.mini{border:1.5px solid var(--borde);background:var(--blanco);color:var(-
 button.mini.oro{background:var(--oro2);border-color:var(--oro2);color:var(--navy);font-weight:700}
 .control.curso{border-left:5px solid var(--ok)}
 .control.cerrada{border-left:5px solid var(--suave)}
+.dialogo{border-left:5px solid var(--oro2);background:#fffbf0}
+.dialogo .etiqueta{color:#a2761a}
 .fuente{font-size:14px;color:var(--suave);margin:8px 0 0}
 .fuente a{color:var(--oro)}
 .cita{border-left:5px solid var(--navy);background:#fff}
@@ -101,5 +103,7 @@ ul.puntos li{margin:6px 0}
   :root:not([data-theme=light]) .aviso{background:#2a2414}
   :root:not([data-theme=light]) .fila .pista{background:#2a3549}
   :root:not([data-theme=light]) .migas a{color:#f1e3bd}
+  :root:not([data-theme=light]) .dialogo{background:#241f12}
+  :root:not([data-theme=light]) .dialogo .etiqueta{color:var(--oro2)}
   :root:not([data-theme=light]) .orientacion,:root:not([data-theme=light]) .aviso-cat{background:#22304a}
 }

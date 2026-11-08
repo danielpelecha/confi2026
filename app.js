@@ -155,7 +155,9 @@
       case "barras": return el("section", { class: "tarjeta" }, [el("b", { text: b.titulo })].concat(b.items.map(function (i) { return barraFila(i.texto, i.valor, i.total || b.total); })));
       case "nube": return el("section", null, [t, el("div", { class: "nube" }, b.items.map(function (w) { return el("span", { text: w }); }))]);
       case "lista": return el("section", null, [t, b.texto ? el("p", { class: "fecha", text: b.texto }) : null, el("ul", { class: "puntos" }, b.items.map(function (w) { return el("li", { text: w }); }))]);
-      case "dialogo": return el("section", null, [t, b.texto ? el("p", { class: "fecha", text: b.texto }) : null].concat(b.grupos.map(function (g) {
+      case "dialogo":
+        if (b.grupos.length === 1 && !b.titulo) return el("section", { class: "tarjeta dialogo" }, [el("span", { class: "etiqueta", text: "💬 Para dialogar · " + b.grupos[0].momento }), el("ul", { class: "puntos" }, b.grupos[0].preguntas.map(function (p) { return el("li", { text: p }); }))]);
+        return el("section", null, [t, b.texto ? el("p", { class: "fecha", text: b.texto }) : null].concat(b.grupos.map(function (g) {
         return el("div", { class: "tarjeta" }, [el("span", { class: "etiqueta", text: g.momento }), el("ul", { class: "puntos" }, g.preguntas.map(function (p) { return el("li", { text: p }); }))]);
       })));
       case "youtube":
@@ -206,8 +208,13 @@
     if (s.contenido && s.contenido.lema) cont.appendChild(el("p", { class: "lema", text: s.contenido.lema }));
     if (s.contenido && s.contenido.objetivo) cont.appendChild(el("section", { class: "tarjeta" }, [el("b", { text: "Objetivo" }), el("p", { text: s.contenido.objetivo, style: "margin:6px 0 0" })]));
     if (opciones.botonResponder) cont.appendChild(opciones.botonResponder);
-    if (s.video) cont.appendChild(bloqueVideo(s.video, clave));
-    ((s.contenido && s.contenido.bloques) || []).forEach(function (b) { var n = bloque(b); if (n) cont.appendChild(n); });
+    var bloques = (s.contenido && s.contenido.bloques) || [];
+    var videoEnSuSitio = bloques.some(function (b) { return b.tipo === "video"; });
+    if (s.video && !videoEnSuSitio) cont.appendChild(bloqueVideo(s.video, clave));
+    bloques.forEach(function (b) {
+      if (b.tipo === "video") { if (s.video) cont.appendChild(el("section", null, [b.titulo ? el("h2", { text: b.titulo }) : null, bloqueVideo(s.video, clave)])); return; }
+      var n = bloque(b); if (n) cont.appendChild(n);
+    });
     if (!opciones.ocultarActividades) {
       var vf = s.preguntas.filter(function (p) { return p.tipo === "vf"; });
       var txt = s.preguntas.filter(function (p) { return p.tipo !== "vf"; });
