@@ -1,0 +1,79 @@
+:root{--navy:#14213d;--navy2:#1f3160;--oro:#c99a2e;--oro2:#e9b949;--crema:#f7f3ea;--tinta:#1d2433;--suave:#5b6475;--borde:#e3dccb;--ok:#2e7d4f;--mal:#b3403a;--blanco:#fff}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--crema);color:var(--tinta);font-size:17px;line-height:1.5;-webkit-text-size-adjust:100%}
+.cabecera{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:var(--navy);color:#fff}
+.marca{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none}
+.marca small{display:block;font-size:12px;opacity:.8;font-weight:400}
+.logo{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--navy2);color:var(--oro2);font-size:20px}
+.enlace{background:none;border:0;color:var(--oro2);font:inherit;font-size:15px;cursor:pointer;padding:6px}
+main{max-width:720px;margin:0 auto;padding:16px 16px 40px}
+.pie{text-align:center;color:var(--suave);font-size:13px;padding:24px 16px 32px}
+h1{font-size:26px;line-height:1.2;margin:8px 0 4px;color:var(--navy)}
+h2{font-size:20px;margin:28px 0 10px;color:var(--navy)}
+.lema{font-style:italic;color:var(--oro);margin:0 0 16px}
+.fecha{color:var(--suave);font-size:14px}
+.cargando,.vacio{color:var(--suave);text-align:center;padding:40px 0}
+.tarjeta{background:var(--blanco);border:1px solid var(--borde);border-radius:16px;padding:16px;margin:12px 0}
+a.tarjeta{display:block;color:inherit;text-decoration:none}
+a.tarjeta:active{transform:scale(.99)}
+.etiqueta{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--oro);margin-bottom:4px}
+.nueva{display:inline-block;background:var(--oro2);color:var(--navy);font-size:12px;font-weight:700;border-radius:99px;padding:2px 10px;margin-left:6px}
+.boton{display:block;width:100%;border:0;border-radius:12px;padding:14px 16px;font:inherit;font-weight:700;font-size:17px;background:var(--navy);color:#fff;cursor:pointer}
+.boton.oro{background:var(--oro2);color:var(--navy)}
+.boton:disabled{opacity:.55}
+input[type=text],input[type=password],textarea{width:100%;font:inherit;font-size:17px;padding:12px 14px;border:1.5px solid var(--borde);border-radius:12px;background:#fff;color:var(--tinta)}
+textarea{min-height:90px;resize:vertical}
+input:focus,textarea:focus{outline:2px solid var(--oro2);border-color:var(--oro2)}
+.acceso{max-width:420px;margin:40px auto;text-align:center}
+.acceso .logo{width:64px;height:64px;font-size:34px;margin:0 auto 12px;border-radius:18px}
+.acceso input{text-align:center;letter-spacing:.12em;text-transform:uppercase;margin:16px 0 12px}
+.error{color:var(--mal);font-size:15px;margin:8px 0}
+.video{position:relative;border-radius:16px;overflow:hidden;background:var(--navy);aspect-ratio:16/9;display:grid;place-items:center;color:#fff;text-align:center}
+.video video{width:100%;height:100%;display:block;background:#000}
+.video .play{background:var(--oro2);color:var(--navy);border:0;border-radius:99px;padding:14px 22px;font:inherit;font-weight:700;cursor:pointer}
+.barra{height:8px;background:rgba(255,255,255,.2);border-radius:99px;overflow:hidden;width:70%;margin:12px auto 0}
+.barra i{display:block;height:100%;width:0;background:var(--oro2);transition:width .2s}
+.cifras{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.cifra{background:var(--navy);color:#fff;border-radius:14px;padding:14px;text-align:center}
+.cifra b{display:block;font-size:30px;color:var(--oro2);line-height:1.1}
+.cifra span{font-size:14px;opacity:.9}
+.fila{margin:10px 0}
+.fila .txt{display:flex;justify-content:space-between;gap:10px;font-size:15px}
+.fila .pista{height:10px;background:#ece5d4;border-radius:99px;overflow:hidden;margin-top:4px}
+.fila .pista i{display:block;height:100%;background:var(--oro)}
+.aviso{border-left:5px solid var(--oro2);background:#fff8e6}
+.cita{border-left:5px solid var(--navy);background:#fff}
+.cita blockquote{margin:6px 0 0;font-family:Georgia,"Times New Roman",serif;font-size:18px}
+.cita cite{display:block;margin-top:8px;font-style:normal;font-weight:700;color:var(--oro)}
+.nube{display:flex;flex-wrap:wrap;gap:8px}
+.nube span{background:var(--navy);color:#fff;border-radius:99px;padding:6px 14px;font-size:15px}
+ul.puntos{padding-left:20px;margin:6px 0}
+ul.puntos li{margin:6px 0}
+.sobre summary{cursor:pointer;font-weight:700;list-style:none;display:flex;justify-content:space-between;align-items:center}
+.sobre summary::-webkit-details-marker{display:none}
+.sobre summary::after{content:"✉";color:var(--oro)}
+.sobre[open] summary::after{content:"✕"}
+.pregunta{margin:18px 0}
+.pregunta label,.pregunta .enun{display:block;font-weight:600;margin-bottom:8px}
+.opc{font-weight:400;color:var(--suave);font-size:14px}
+.vf{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vf button{border:1.5px solid var(--borde);background:#fff;border-radius:12px;padding:12px;font:inherit;font-weight:700;cursor:pointer;color:var(--tinta)}
+.vf button[aria-pressed=true]{background:var(--navy);color:#fff;border-color:var(--navy)}
+.vf button.bien{background:var(--ok);border-color:var(--ok);color:#fff}
+.vf button.malr{background:var(--mal);border-color:var(--mal);color:#fff}
+.expl{font-size:15px;color:var(--suave);margin-top:6px}
+.gracias{text-align:center}
+.gracias b{font-size:22px;color:var(--navy)}
+.tabla{width:100%;border-collapse:collapse;font-size:15px}
+.tabla td{border-top:1px solid var(--borde);padding:8px 4px;vertical-align:top}
+.tabla td.h{color:var(--suave);white-space:nowrap;width:1%}
+.migas{font-size:15px}
+.migas a{color:var(--navy)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]){--crema:#10151f;--blanco:#182131;--tinta:#e8ecf3;--suave:#9aa3b5;--borde:#2a3549;--navy:#0b1426;--navy2:#22345e}
+  :root:not([data-theme=light]) h1,:root:not([data-theme=light]) h2{color:#f1e3bd}
+  :root:not([data-theme=light]) .aviso{background:#2a2414}
+  :root:not([data-theme=light]) .fila .pista{background:#2a3549}
+  :root:not([data-theme=light]) .migas a{color:#f1e3bd}
+}
