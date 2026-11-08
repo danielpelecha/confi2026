@@ -73,3 +73,13 @@ Objetivo (Daniel): las respuestas quedan registradas para siempre para analizar 
 - La solución del verdadero/falso no se muestra al responder: aparece cuando el catequista valida y envía las respuestas, para que los aciertos reflejen lo que han entendido.
 - Al cerrar, cada joven ve «Tu respuesta» debajo de cada pregunta (guardada en su móvil).
 - Las sesiones antiguas sin bloques `pregunta` (Sesión 1) siguen funcionando como antes.
+
+## Departamento del catequista: antes, durante y después (8-11-2026)
+
+Pestañas de cada sesión, ordenadas por el momento en que se usan:
+1. **📖 Preparar:** guion por minutos, material necesario y notas pastorales.
+2. **▶ En directo:** el mismo programa que ve el joven, en el mismo orden. Debajo de cada pregunta, las respuestas que van llegando (se actualizan solas cada 10 s sin mover la pantalla ni cortar el vídeo) y, en las preguntas de diálogo, la orientación plegada. Arriba, iniciar/cerrar la sesión y cuántos han respondido. Es la pestaña por defecto con la sesión en curso.
+3. **✅ Revisar y enviar:** editar u ocultar respuestas, «Validar y enviar».
+4. **📊 Balance:** valoración del catequista y comparación entre grupos y cursos.
+
+Para explicarlo a otro catequista: «Antes, Preparar; durante, En directo; después, Revisar y enviar».
