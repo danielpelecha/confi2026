@@ -2,7 +2,8 @@
 *{box-sizing:border-box}
 html,body{margin:0}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--crema);color:var(--tinta);font-size:17px;line-height:1.5;-webkit-text-size-adjust:100%}
-.cabecera{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:var(--navy);color:#fff}
+.arriba{position:sticky;top:0;z-index:5}
+.cabecera{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;padding-top:max(10px,env(safe-area-inset-top));background:var(--navy);color:#fff}
 .marca{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none}
 .marca small{display:block;font-size:12px;opacity:.8;font-weight:400}
 .logo{display:grid;place-items:center;width:36px;height:36px;border-radius:10px;background:var(--navy2);color:var(--oro2);font-size:20px}
@@ -64,10 +65,22 @@ body.modo-cat .logo{background:#4a3317}
 .resp.oculta .valor{opacity:.5;text-decoration:line-through}
 button.mini{border:1.5px solid var(--borde);background:var(--blanco);color:var(--tinta);border-radius:8px;padding:6px 10px;font:inherit;font-size:14px;cursor:pointer}
 button.mini.oro{background:var(--oro2);border-color:var(--oro2);color:var(--navy);font-weight:700}
-.control.curso{border-left:5px solid var(--ok)}
-.control.cerrada{border-left:5px solid var(--suave)}
+.control.estado-curso{border-left:5px solid var(--ok)}
+.control.estado-cerrada{border-left:5px solid var(--suave)}
 .dialogo{border-left:5px solid var(--oro2);background:#fffbf0}
 .dialogo .etiqueta{color:#a2761a}
+.barra-sesiones{display:flex;gap:8px;overflow-x:auto;padding:8px 16px;background:var(--navy2);scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.barra-sesiones[hidden]{display:none}
+.barra-sesiones::-webkit-scrollbar{display:none}
+.barra-sesiones a{flex:0 0 auto;padding:7px 14px;border-radius:99px;background:rgba(255,255,255,.12);color:#fff;text-decoration:none;font-size:14px;white-space:nowrap}
+.barra-sesiones a b{color:var(--oro2)}
+.barra-sesiones a.activa{background:var(--oro2);color:var(--navy);font-weight:700}
+.barra-sesiones a.activa b{color:var(--navy)}
+body.modo-cat .barra-sesiones{background:#4a3317}
+.antsig{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:28px 0 0}
+.antsig .boton{font-size:15px;padding:12px}
+.boton.suave{background:var(--blanco);color:var(--navy);border:1.5px solid var(--borde)}
+.migas a{display:inline-block;padding:6px 14px;border:1.5px solid var(--borde);border-radius:99px;background:var(--blanco);text-decoration:none;font-weight:600}
 .fuente{font-size:14px;color:var(--suave);margin:8px 0 0}
 .fuente a{color:var(--oro)}
 .cita{border-left:5px solid var(--navy);background:#fff}

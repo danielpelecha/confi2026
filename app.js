@@ -31,7 +31,36 @@
     (hijos || []).forEach(function (h) { if (h != null) n.appendChild(typeof h === "string" ? document.createTextNode(h) : h); });
     return n;
   }
-  function limpiar() { app.innerHTML = ""; window.scrollTo(0, 0); }
+  var barra = document.getElementById("barra");
+  function limpiar() { app.innerHTML = ""; barra.hidden = true; barra.innerHTML = ""; window.scrollTo(0, 0); }
+  /* Título corto: lo que va antes de los dos puntos, o el título entero si es breve */
+  function tituloCorto(s) {
+    var t = (s.contenido && s.contenido.titulo_corto) || String(s.titulo).split(":")[0].trim();
+    return t.length > 26 ? t.slice(0, 25).trim() + "…" : t;
+  }
+  /* Barra fija de sesiones: un toque para cambiar de sesión */
+  function barraSesiones(lista, actual, href) {
+    barra.innerHTML = "";
+    lista.slice().sort(function (a, b) { return a.numero - b.numero; }).forEach(function (s) {
+      var activa = String(s.numero) === String(actual);
+      barra.appendChild(el("a", { href: href(s), class: activa ? "activa" : null, "aria-current": activa ? "page" : null }, [el("b", { text: String(s.numero) }), " · " + tituloCorto(s)]));
+    });
+    barra.hidden = false;
+    var a = barra.querySelector(".activa");
+    if (a) barra.scrollLeft = a.offsetLeft - (barra.clientWidth - a.offsetWidth) / 2;
+  }
+  function pon(padre, n) { if (n) padre.appendChild(n); }
+  /* Botones al final: sesión anterior y siguiente */
+  function anteriorSiguiente(lista, actual, href) {
+    var orden = lista.slice().sort(function (a, b) { return a.numero - b.numero; });
+    var i = orden.map(function (s) { return String(s.numero); }).indexOf(String(actual));
+    var ant = orden[i - 1], sig = orden[i + 1];
+    if (!ant && !sig) return null;
+    return el("nav", { class: "antsig" }, [
+      ant ? el("a", { class: "boton", href: href(ant), text: "← Sesión " + ant.numero }) : el("span"),
+      sig ? el("a", { class: "boton", href: href(sig), text: "Sesión " + sig.numero + " →" }) : el("span")
+    ]);
+  }
   function fechaBonita(f) {
     if (!f) return "";
     var d = new Date(f + "T12:00:00");
@@ -263,26 +292,33 @@
     cabecera("joven"); limpiar();
     app.appendChild(migas("#/joven", "← Inicio"));
     if (!s) { app.appendChild(el("p", { class: "vacio", text: "No encuentro esa sesión." })); return; }
+    barraSesiones(DATOS.material, s.numero, function (x) { return "#/joven/sesion/" + x.numero; });
     app.appendChild(el("span", { class: "etiqueta", text: "📘 Material · Sesión " + s.numero }));
     app.appendChild(el("h1", { text: s.titulo }));
+    if (DATOS.resultados.some(function (r) { return r.sesion === s.numero; })) app.appendChild(el("a", { class: "boton suave", href: "#/joven/grupo/" + s.numero, style: "margin:8px 0", text: "📊 Lo que compartimos en esta sesión" }));
     var boton = abierta(s) ? el("a", { class: "boton oro", href: "#/joven/sesion/" + s.numero + "/responder", style: "text-align:center;text-decoration:none;margin:8px 0 16px", text: leer(claveEnviado(s)) ? "✏️  Ya has respondido: revisar o cambiar" : "✍️  Responder a las preguntas de hoy" }) : null;
     var enviada = DATOS.resultados.some(function (r) { return r.sesion === s.numero; });
     materialAlumno(app, s, DATOS.clave_video, { botonResponder: boton, ocultarActividades: abierta(s) || !enviada });
     if (!abierta(s) && !enviada) app.appendChild(el("p", { class: "aviso-cat", text: "🔒 Las actividades y el cuestionario de esta sesión aparecerán cuando tu catequista inicie la sesión." }));
+    pon(app, anteriorSiguiente(DATOS.material, s.numero, function (x) { return "#/joven/sesion/" + x.numero; }));
   }
   function jovenGrupo(num) {
     var r = DATOS.resultados.filter(function (x) { return String(x.sesion) === String(num); })[0];
     cabecera("joven"); limpiar();
     app.appendChild(migas("#/joven", "← Inicio"));
     if (!r) { app.appendChild(el("p", { class: "vacio", text: "Todavía no hay resumen de esta sesión." })); return; }
+    var pubs = DATOS.resultados.map(function (x) { return { numero: x.sesion, titulo: x.titulo }; });
+    barraSesiones(pubs, r.sesion, function (x) { return "#/joven/grupo/" + x.numero; });
     app.appendChild(el("span", { class: "etiqueta", text: "📊 Grupo " + DATOS.grupo + " · Sesión " + r.sesion }));
     app.appendChild(el("h1", { text: r.titulo }));
+    app.appendChild(el("a", { class: "boton suave", href: "#/joven/sesion/" + r.sesion, style: "margin:8px 0", text: "📘 Ver el material de esta sesión" }));
     if (r.fecha) app.appendChild(el("p", { class: "fecha", text: fechaBonita(r.fecha) }));
     app.appendChild(el("p", { text: "Lo que compartimos entre todos. Siempre de forma anónima." }));
     ((r.contenido && r.contenido.bloques) || []).forEach(function (b) { var n = bloque(b); if (n) app.appendChild(n); });
     var s = DATOS.material.filter(function (x) { return x.numero === r.sesion; })[0];
     if (s && r.respuestas && r.respuestas.length) respuestasGrupo(app, s, r.respuestas, r.envios);
     if (r.sobres.length) app.appendChild(sobres(r.sobres));
+    pon(app, anteriorSiguiente(pubs, r.sesion, function (x) { return "#/joven/grupo/" + x.numero; }));
   }
   /* Respuestas validadas por el catequista: agrupadas por pregunta, sin saber de quién es cada una */
   function respuestasGrupo(cont, s, respuestas, envios) {
@@ -387,6 +423,7 @@
     app.appendChild(migas("#/catequista", "← Departamento del catequista"));
     if (!s) { app.appendChild(el("p", { class: "vacio", text: "No encuentro esa sesión." })); return; }
     pest = pest || "guion";
+    barraSesiones(CAT.material, s.numero, function (x) { return "#/catequista/sesion/" + x.numero + "/" + pest; });
     app.appendChild(el("span", { class: "etiqueta", text: "📋 Catequista · Sesión " + s.numero }));
     app.appendChild(el("h1", { text: s.titulo }));
     CAT.grupos.forEach(function (g) { app.appendChild(controlSesion(g, s)); });
@@ -401,6 +438,7 @@
     else if (pest === "alumno") { cont.appendChild(el("p", { class: "aviso-cat", text: "Esto es lo que ven los jóvenes. El cuestionario con soluciones (al final) solo les aparece después de que valides y envíes las respuestas; durante la sesión responden en el formulario." })); materialAlumno(cont, s, CAT.clave_video); }
     else if (pest === "respuestas") catRespuestas(cont, s);
     else if (pest === "balance") catBalance(cont, s);
+    pon(app, anteriorSiguiente(CAT.material, s.numero, function (x) { return "#/catequista/sesion/" + x.numero + "/" + pest; }));
   }
   function catGuion(cont, m) {
     if (m.objetivo) cont.appendChild(el("section", { class: "tarjeta" }, [el("b", { text: "Objetivo" }), el("p", { text: m.objetivo, style: "margin:6px 0 0" }), m.duracion ? el("p", { class: "fecha", text: "Duración: " + m.duracion }) : null]));
@@ -442,7 +480,7 @@
   function controlSesion(g, s) {
     var x = datosGrupoSesion(g, s), e = estadoSesion(g, s, x);
     var pest = (location.hash.split("/")[4]) || "guion";
-    var caja = el("section", { class: "tarjeta control " + e.clave }, [
+    var caja = el("section", { class: "tarjeta control estado-" + e.clave }, [
       el("span", { class: "etiqueta", text: "Grupo " + g.nombre }),
       el("p", { style: "margin:2px 0 8px", text: e.texto + (e.clave === "curso" ? ": los jóvenes ya pueden responder en su móvil." : e.clave === "cerrada" ? ": los jóvenes ya no pueden responder." : ": los jóvenes aún no pueden responder.") })
     ]);
