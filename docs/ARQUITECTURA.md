@@ -63,3 +63,13 @@ Objetivo (Daniel): las respuestas quedan registradas para siempre para analizar 
 - `respuestas.origen`: `app` o `whatsapp` (respuestas anteriores a la app).
 - Botón **«Descargar todo el histórico (Excel)»** en el inicio del catequista: CSV con todos los grupos, sesiones, respuestas (acierto, oculta, corregida, origen) y valoraciones.
 - Para un grupo nuevo: `insert into grupos(nombre, codigo, curso) values ('CONFI2028', crypt('CODIGO', gen_salt('bf')), '2028-2030');`
+
+## Responder dentro del programa de la sesión (8-11-2026, decisión de Daniel)
+
+- Ya no hay formulario aparte. Cada pregunta va en su momento del programa (`contenido.bloques`): `{tipo:"pregunta", id}` para las preguntas para escribir y `{tipo:"dialogo", grupos:[{momento, preguntas, ids}]}` para las de diálogo.
+- `preguntas.clase`: `escrita` o `dialogo`. Las de diálogo son opcionales («quien tenga opinión»).
+- Al pulsar «Iniciar la sesión», el móvil de cada joven lo detecta solo (consulta `estado_grupo` cada 8 s) y las preguntas se ponen en verde con su espacio para escribir.
+- Cada respuesta se guarda sola (`guardar_respuesta`, una por pregunta, `unique(envio, pregunta_id)`), y se puede **cambiar mientras la sesión esté en curso**, también el verdadero/falso.
+- La solución del verdadero/falso no se muestra al responder: aparece cuando el catequista valida y envía las respuestas, para que los aciertos reflejen lo que han entendido.
+- Al cerrar, cada joven ve «Tu respuesta» debajo de cada pregunta (guardada en su móvil).
+- Las sesiones antiguas sin bloques `pregunta` (Sesión 1) siguen funcionando como antes.

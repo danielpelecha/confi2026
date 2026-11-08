@@ -125,7 +125,7 @@
     app.appendChild(form);
     input.focus();
   }
-  function cargarJoven(cod) { return rpc("app_datos", { p_codigo: cod }).then(function (d) { DATOS = d; return d; }); }
+  function cargarJoven(cod) { return rpc("app_datos", { p_codigo: cod }).then(function (d) { DATOS = d; vigilar(); return d; }); }
   function cargarCat(cod) { return rpc("catequista_datos", { p_codigo: cod }).then(function (d) { CAT = d; return d; }); }
   btnSalir.addEventListener("click", function () {
     borrar("confi_codigo"); borrarS("confi_cat"); DATOS = null; CAT = null; location.hash = "#/";
@@ -240,11 +240,16 @@
     var bloques = (s.contenido && s.contenido.bloques) || [];
     var videoEnSuSitio = bloques.some(function (b) { return b.tipo === "video"; });
     if (s.video && !videoEnSuSitio) cont.appendChild(bloqueVideo(s.video, clave));
+    var enLinea = bloques.some(function (b) { return b.tipo === "pregunta"; });
+    var ctx = { s: s, modo: opciones.modo || "joven", abierta: !!opciones.abierta, enviada: !!opciones.enviada };
+    var porId = {}; s.preguntas.forEach(function (p) { porId[p.id] = p; });
     bloques.forEach(function (b) {
       if (b.tipo === "video") { if (s.video) cont.appendChild(el("section", null, [b.titulo ? el("h2", { text: b.titulo }) : null, bloqueVideo(s.video, clave)])); return; }
+      if (b.tipo === "pregunta") { if (porId[b.id]) cont.appendChild(preguntaEnLinea(porId[b.id], ctx)); return; }
+      if (b.tipo === "dialogo" && b.grupos.length === 1 && b.grupos[0].ids) { cont.appendChild(dialogoEnLinea(b.grupos[0], porId, ctx)); return; }
       var n = bloque(b); if (n) cont.appendChild(n);
     });
-    if (!opciones.ocultarActividades) {
+    if (!enLinea && !opciones.ocultarActividades) {
       var vf = s.preguntas.filter(function (p) { return p.tipo === "vf"; });
       var txt = s.preguntas.filter(function (p) { return p.tipo !== "vf"; });
       if (vf.length || txt.length) cont.appendChild(el("h2", { text: "Actividades de la sesión" }));
@@ -254,6 +259,119 @@
       }
       if (txt.length) cont.appendChild(el("section", { class: "tarjeta" }, [el("b", { text: "Preguntas para responder" }), el("ul", { class: "puntos" }, txt.map(function (p) { return el("li", { text: p.enunciado }); }))]));
     }
+  }
+
+  /* ---------- Responder dentro del programa de la sesión ---------- */
+  function claveResp(pid) { return "confi_r_" + (DATOS ? DATOS.grupo : "") + "_" + pid; }
+  function envioDe(s) {
+    var k = "confi_envio_" + DATOS.grupo + "_" + s.id, v = leer(k);
+    if (!v) {
+      v = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 3 | 8)).toString(16); });
+      guardar(k, v);
+    }
+    return v;
+  }
+  var pendientes = {};
+  function enviarRespuesta(s, p, valor, estado) {
+    if (estado) estado.textContent = "Guardando…";
+    pendientes[p.id] = { s: s, p: p, valor: valor };
+    return rpc("guardar_respuesta", { p_codigo: leer("confi_codigo"), p_sesion: s.id, p_envio: envioDe(s), p_pregunta: p.id, p_valor: valor })
+      .then(function () { delete pendientes[p.id]; if (estado) estado.textContent = valor.trim() ? "✓ Guardada" : ""; return true; })
+      .catch(function (e) {
+        if (/formulario_cerrado/.test(e.message)) { delete pendientes[p.id]; if (estado) estado.textContent = "🔒 La sesión se ha cerrado"; }
+        else if (estado) estado.textContent = "⚠ Sin conexión: se guardará en cuanto vuelva";
+        return false;
+      });
+  }
+  function reintentarPendientes() {
+    Object.keys(pendientes).forEach(function (k) { var x = pendientes[k]; enviarRespuesta(x.s, x.p, x.valor, null); });
+  }
+  function campoTexto(p, ctx) {
+    var cont = el("div", { class: "campo" });
+    var mia = leer(claveResp(p.id)) || "";
+    if (ctx.modo === "vista") return null;
+    if (ctx.abierta) {
+      var dial = p.clase === "dialogo";
+      var ta = el("textarea", { maxlength: "2000", "aria-label": p.enunciado, placeholder: dial ? "Si quieres, escribe aquí tu opinión…" : "Escribe aquí tu respuesta…" });
+      ta.value = mia;
+      var estado = el("span", { class: "estado-guardado", text: mia ? "✓ Guardada" : "" });
+      var t = null;
+      ta.addEventListener("input", function () {
+        guardar(claveResp(p.id), ta.value); estado.textContent = "…";
+        clearTimeout(t); t = setTimeout(function () { enviarRespuesta(ctx.s, p, ta.value, estado); }, 1200);
+      });
+      ta.addEventListener("blur", function () { clearTimeout(t); if ((leer(claveResp(p.id)) || "") !== ta.dataset.enviado) { ta.dataset.enviado = ta.value; enviarRespuesta(ctx.s, p, ta.value, estado); } });
+      ta.dataset.enviado = mia;
+      cont.appendChild(el("span", { class: "etiqueta-abierta", text: dial ? "✏️ Si quieres, escribe tu opinión" : "✏️ Escribe tu respuesta" + (p.opcional ? " (opcional)" : "") }));
+      cont.appendChild(ta); cont.appendChild(estado);
+      return cont;
+    }
+    if (mia) { cont.appendChild(el("p", { class: "mi-respuesta" }, [el("b", { text: "Tu respuesta: " }), mia])); return cont; }
+    return null;
+  }
+  function preguntaEnLinea(p, ctx) {
+    var abiertaYa = ctx.abierta && ctx.modo !== "vista";
+    var etiqueta = "✏️ Pregunta para responder" + (p.opcional ? " · opcional" : "");
+    if (p.tipo === "vf") {
+      var mia = ctx.modo === "vista" ? null : leer(claveResp(p.id));
+      var estadoVF = el("span", { class: "estado-guardado" });
+      if (abiertaYa) {
+        /* En curso: puede cambiar la respuesta; la solución se verá cuando el catequista envíe las respuestas */
+        var cajaA = preguntaVF(p, false, function (v) {
+          guardar(claveResp(p.id), v);
+          enviarRespuesta(ctx.s, p, v, estadoVF).then(function (ok) { if (ok) estadoVF.textContent = "✓ Guardada. Puedes cambiarla mientras la sesión esté en curso."; });
+        });
+        cajaA.classList.add("abierta");
+        cajaA.insertBefore(el("span", { class: "etiqueta-abierta", text: "✏️ Verdadero o falso: elige tu respuesta" }), cajaA.firstChild);
+        if (mia) { var bt = cajaA.querySelector('[data-v="' + mia + '"]'); if (bt) bt.setAttribute("aria-pressed", "true"); estadoVF.textContent = "✓ Guardada. Puedes cambiarla mientras la sesión esté en curso."; }
+        cajaA.appendChild(estadoVF);
+        return cajaA;
+      }
+      if (ctx.modo !== "vista" && (mia || ctx.enviada)) {
+        var cajaC = preguntaVF(p, !mia, null);
+        cajaC.insertBefore(el("span", { class: "etiqueta", text: "Verdadero o falso" }), cajaC.firstChild);
+        if (mia && ctx.enviada) cajaC._corregir(mia);
+        else if (mia) {
+          cajaC.querySelectorAll("button").forEach(function (o) { o.disabled = true; o.setAttribute("aria-pressed", o.getAttribute("data-v") === mia ? "true" : "false"); });
+          cajaC.appendChild(el("p", { class: "fecha", text: "La solución aparecerá cuando tu catequista envíe las respuestas del grupo." }));
+        }
+        return cajaC;
+      }
+      return el("section", { class: "tarjeta pregunta-linea" }, [el("span", { class: "etiqueta", text: "Verdadero o falso" }), el("b", { text: p.enunciado }),
+        el("p", { class: "fecha", style: "margin:6px 0 0", text: ctx.modo === "vista" ? "Los jóvenes responden aquí cuando la sesión está en curso." : "🔒 Se podrá responder cuando tu catequista inicie la sesión." })]);
+    }
+    var c = el("section", { class: "tarjeta pregunta-linea" + (abiertaYa ? " abierta" : "") }, [el("span", { class: "etiqueta", text: etiqueta }), el("b", { text: p.enunciado })]);
+    var campo = campoTexto(p, ctx);
+    if (campo) c.appendChild(campo);
+    else if (!ctx.abierta) c.appendChild(el("p", { class: "fecha", style: "margin:6px 0 0", text: ctx.modo === "vista" ? "Los jóvenes responden aquí cuando la sesión está en curso." : "🔒 Se podrá responder cuando tu catequista inicie la sesión." }));
+    return c;
+  }
+  function dialogoEnLinea(g, porId, ctx) {
+    var abiertaYa = ctx.abierta && ctx.modo !== "vista";
+    var c = el("section", { class: "tarjeta dialogo" + (abiertaYa ? " abierta" : "") }, [el("span", { class: "etiqueta", text: "💬 Para dialogar · " + g.momento })]);
+    g.ids.forEach(function (id, i) {
+      var p = porId[id] || { id: id, enunciado: g.preguntas[i], clase: "dialogo" };
+      var d = el("div", { class: "pdial" }, [el("p", { class: "enun-dial", text: "• " + p.enunciado })]);
+      var campo = campoTexto(p, ctx); if (campo) d.appendChild(campo);
+      c.appendChild(d);
+    });
+    return c;
+  }
+  /* Comprobación en vivo: si el catequista abre o cierra la sesión, el móvil cambia solo */
+  var vigilancia = null;
+  function vigilar() {
+    if (vigilancia) return;
+    vigilancia = setInterval(function () {
+      if (!DATOS || !leer("confi_codigo") || !/^#\/joven/.test(location.hash)) return;
+      rpc("estado_grupo", { p_codigo: leer("confi_codigo") }).then(function (r) {
+        reintentarPendientes();
+        if (String(r.sesion_abierta) !== String(DATOS.sesion_abierta)) {
+          var activo = document.activeElement && document.activeElement.tagName === "TEXTAREA" && r.sesion_abierta != null;
+          DATOS.sesion_abierta = r.sesion_abierta;
+          if (!activo) { var y = window.scrollY; router(); window.scrollTo(0, y); }
+        }
+      }).catch(function () {});
+    }, 8000);
   }
 
   /* =====================================================================
@@ -267,7 +385,7 @@
     app.appendChild(el("h1", { text: "Hola 👋" }));
     app.appendChild(el("p", { text: "Aquí tienes el material de cada sesión y, aparte, lo que hemos compartido como grupo." }));
     var ab = DATOS.material.filter(abierta)[0];
-    if (ab) app.appendChild(el("a", { class: "boton oro", href: "#/joven/sesion/" + ab.numero + "/responder", style: "margin:12px 0", text: leer(claveEnviado(ab)) ? "✏️  Revisar o cambiar mis respuestas de la Sesión " + ab.numero : "✍️  Responder a las preguntas de la Sesión " + ab.numero }));
+    if (ab) app.appendChild(el("a", { class: "boton verde", href: "#/joven/sesion/" + ab.numero, style: "margin:12px 0", text: "🟢 Sesión " + ab.numero + " en curso: entra para responder" }));
     app.appendChild(el("h2", { text: "📘 Material de catequesis" }));
     DATOS.material.slice().sort(function (a, b) { return a.numero - b.numero; }).forEach(function (s) {
       app.appendChild(el("a", { class: "tarjeta", href: "#/joven/sesion/" + s.numero }, [
@@ -296,10 +414,16 @@
     app.appendChild(el("span", { class: "etiqueta", text: "📘 Material · Sesión " + s.numero }));
     app.appendChild(el("h1", { text: s.titulo }));
     if (DATOS.resultados.some(function (r) { return r.sesion === s.numero; })) app.appendChild(el("a", { class: "boton suave", href: "#/joven/grupo/" + s.numero, style: "margin:8px 0", text: "📊 Lo que compartimos en esta sesión" }));
-    var boton = abierta(s) ? el("a", { class: "boton oro", href: "#/joven/sesion/" + s.numero + "/responder", style: "text-align:center;text-decoration:none;margin:8px 0 16px", text: leer(claveEnviado(s)) ? "✏️  Ya has respondido: revisar o cambiar" : "✍️  Responder a las preguntas de hoy" }) : null;
     var enviada = DATOS.resultados.some(function (r) { return r.sesion === s.numero; });
-    materialAlumno(app, s, DATOS.clave_video, { botonResponder: boton, ocultarActividades: abierta(s) || !enviada });
-    if (!abierta(s) && !enviada) app.appendChild(el("p", { class: "aviso-cat", text: "🔒 Las actividades y el cuestionario de esta sesión aparecerán cuando tu catequista inicie la sesión." }));
+    var enLinea = ((s.contenido && s.contenido.bloques) || []).some(function (b) { return b.tipo === "pregunta"; });
+    if (enLinea) {
+      if (abierta(s)) app.appendChild(el("section", { class: "aviso-verde" }, [el("b", { text: "🟢 Sesión en curso: ya puedes responder" }), el("p", { style: "margin:4px 0 0", text: "Escribe en cada pregunta según vaya avanzando la sesión. Cada respuesta se guarda sola. Son anónimas." })]));
+      materialAlumno(app, s, DATOS.clave_video, { modo: "joven", abierta: abierta(s), enviada: enviada });
+    } else {
+      var boton = abierta(s) ? el("a", { class: "boton oro", href: "#/joven/sesion/" + s.numero + "/responder", style: "margin:8px 0 16px", text: leer(claveEnviado(s)) ? "✏️  Ya has respondido: revisar o cambiar" : "✍️  Responder a las preguntas de hoy" }) : null;
+      materialAlumno(app, s, DATOS.clave_video, { botonResponder: boton, ocultarActividades: abierta(s) || !enviada });
+      if (!abierta(s) && !enviada) app.appendChild(el("p", { class: "aviso-cat", text: "🔒 Las actividades y el cuestionario de esta sesión aparecerán cuando tu catequista inicie la sesión." }));
+    }
     pon(app, anteriorSiguiente(DATOS.material, s.numero, function (x) { return "#/joven/sesion/" + x.numero; }));
   }
   function jovenGrupo(num) {
@@ -331,7 +455,7 @@
       var rs = porP[p.id]; return barraFila(p.enunciado, rs.filter(function (v) { return v === p.correcta; }).length, rs.length);
     }))));
     s.preguntas.filter(function (p) { return p.tipo !== "vf" && porP[p.id]; }).forEach(function (p) {
-      cont.appendChild(el("section", { class: "tarjeta" }, [el("b", { text: p.enunciado }), el("ul", { class: "puntos" }, porP[p.id].map(function (v) { return el("li", { text: v }); }))]));
+      cont.appendChild(el("section", { class: "tarjeta" }, [el("b", { text: (p.clase === "dialogo" ? "💬 " : "") + p.enunciado }), el("ul", { class: "puntos" }, porP[p.id].map(function (v) { return el("li", { text: v }); }))]));
     });
   }
   function jovenResponder(num) {
@@ -435,7 +559,7 @@
     var m = s.catequista || {};
     if (pest === "guion") catGuion(cont, m);
     else if (pest === "dialogo") catDialogo(cont, m);
-    else if (pest === "alumno") { cont.appendChild(el("p", { class: "aviso-cat", text: "Esto es lo que ven los jóvenes. El cuestionario con soluciones (al final) solo les aparece después de que valides y envíes las respuestas; durante la sesión responden en el formulario." })); materialAlumno(cont, s, CAT.clave_video); }
+    else if (pest === "alumno") { cont.appendChild(el("p", { class: "aviso-cat", text: "Esto es lo que ven los jóvenes. El cuestionario con soluciones (al final) solo les aparece después de que valides y envíes las respuestas; durante la sesión responden en el formulario." })); materialAlumno(cont, s, CAT.clave_video, { modo: "vista" }); }
     else if (pest === "respuestas") catRespuestas(cont, s);
     else if (pest === "balance") catBalance(cont, s);
     pon(app, anteriorSiguiente(CAT.material, s.numero, function (x) { return "#/catequista/sesion/" + x.numero + "/" + pest; }));
@@ -511,7 +635,7 @@
       x.respuestas.forEach(function (r) { (porP[r.pregunta] = porP[r.pregunta] || []).push(r); });
       s.preguntas.forEach(function (p) {
         var rs = porP[p.id] || [];
-        var c = el("section", { class: "tarjeta" }, [el("b", { text: p.orden + ". " + p.enunciado })]);
+        var c = el("section", { class: "tarjeta" }, [el("b", { text: p.orden + ". " + (p.clase === "dialogo" ? "💬 " : "") + p.enunciado })]);
         if (p.tipo === "vf") {
           var bien = rs.filter(function (r) { return r.valor === p.correcta; }).length;
           c.appendChild(rs.length ? barraFila("Aciertos (correcta: " + (p.correcta === "V" ? "verdadero" : "falso") + ")", bien, rs.length) : el("p", { class: "fecha", text: "Sin respuestas todavía." }));
@@ -631,7 +755,7 @@
     /* 3. Pregunta a pregunta */
     cont.appendChild(el("h2", { text: "Pregunta a pregunta" }));
     s.preguntas.forEach(function (p) {
-      var c = el("section", { class: "tarjeta" }, [el("b", { text: p.orden + ". " + p.enunciado })]);
+      var c = el("section", { class: "tarjeta" }, [el("b", { text: p.orden + ". " + (p.clase === "dialogo" ? "💬 " : "") + p.enunciado })]);
       if (p.tipo === "vf") c.appendChild(el("p", { class: "fecha", style: "margin:4px 0", text: "Correcta: " + (p.correcta === "V" ? "verdadero" : "falso") + (p.explicacion ? ". " + p.explicacion : "") }));
       var hay = false;
       CAT.grupos.forEach(function (g) {
@@ -699,7 +823,11 @@
         return cargarJoven(leer("confi_codigo")).then(router).catch(function (e) { if (/codigo_incorrecto/.test(e.message)) { borrar("confi_codigo"); pantallaCodigo("joven", "El código ha cambiado. Pídeselo a tu catequista."); } else pantallaCodigo("joven", "No se ha podido conectar. Revisa tu conexión."); });
       }
       if (h[0] === "" ) { location.hash = "#/joven"; return; }
-      if (h[1] === "sesion" && h[3] === "responder") return jovenResponder(h[2]);
+      if (h[1] === "sesion" && h[3] === "responder") {
+        var sr = DATOS.material.filter(function (x) { return String(x.numero) === String(h[2]); })[0];
+        if (sr && ((sr.contenido && sr.contenido.bloques) || []).some(function (b) { return b.tipo === "pregunta"; })) { location.hash = "#/joven/sesion/" + h[2]; return; }
+        return jovenResponder(h[2]);
+      }
       if (h[1] === "sesion") return jovenSesion(h[2]);
       if (h[1] === "grupo") return jovenGrupo(h[2]);
       return jovenInicio();

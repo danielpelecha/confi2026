@@ -81,6 +81,18 @@ body.modo-cat .barra-sesiones{background:#4a3317}
 .antsig .boton{font-size:15px;padding:12px}
 .boton.suave{background:var(--blanco);color:var(--navy);border:1.5px solid var(--borde)}
 .migas a{display:inline-block;padding:6px 14px;border:1.5px solid var(--borde);border-radius:99px;background:var(--blanco);text-decoration:none;font-weight:600}
+.boton.verde{background:var(--ok);color:#fff}
+.aviso-verde{background:#e8f5ec;border-left:5px solid var(--ok);border-radius:14px;padding:12px 14px;margin:12px 0}
+.aviso-verde b{color:var(--ok)}
+.pregunta-linea b{display:block}
+.tarjeta.abierta,.pregunta.abierta{border:2px solid var(--ok);box-shadow:0 0 0 4px rgba(46,125,79,.12)}
+.etiqueta-abierta{display:block;font-size:13px;font-weight:700;color:var(--ok);margin:10px 0 6px}
+.campo textarea{min-height:70px}
+.estado-guardado{display:block;font-size:13px;color:var(--ok);min-height:18px;margin-top:4px}
+.pdial{padding:6px 0}
+.pdial+.pdial{border-top:1px dashed var(--borde)}
+.enun-dial{margin:4px 0;font-weight:600}
+.mi-respuesta{margin:8px 0 0;background:#f2f5fb;border-radius:10px;padding:8px 12px;white-space:pre-wrap}
 .fuente{font-size:14px;color:var(--suave);margin:8px 0 0}
 .fuente a{color:var(--oro)}
 .cita{border-left:5px solid var(--navy);background:#fff}
@@ -116,6 +128,8 @@ ul.puntos li{margin:6px 0}
   :root:not([data-theme=light]) .aviso{background:#2a2414}
   :root:not([data-theme=light]) .fila .pista{background:#2a3549}
   :root:not([data-theme=light]) .migas a{color:#f1e3bd}
+  :root:not([data-theme=light]) .aviso-verde{background:#14281c}
+  :root:not([data-theme=light]) .mi-respuesta{background:#22304a}
   :root:not([data-theme=light]) .dialogo{background:#241f12}
   :root:not([data-theme=light]) .dialogo .etiqueta{color:var(--oro2)}
   :root:not([data-theme=light]) .orientacion,:root:not([data-theme=light]) .aviso-cat{background:#22304a}
