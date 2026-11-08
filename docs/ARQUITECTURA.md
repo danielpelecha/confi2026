@@ -53,3 +53,13 @@ Rutas: `#/joven`, `#/joven/sesion/N`, `#/joven/sesion/N/responder`, `#/joven/gru
 5. **✅ Validar y enviar respuestas**: todas las respuestas no ocultas pasan a «Lo que hemos compartido como grupo», de forma permanente y anónima, como material de ese grupo. Se puede **retirar el envío**.
 
 Los grupos futuros no ven las respuestas de CONFI2026: cada grupo solo ve las suyas. El material de las sesiones se les muestra limpio.
+
+## Registro y balance (8-11-2026)
+
+Objetivo (Daniel): las respuestas quedan registradas para siempre para analizar «si la transmisión está llegando» y orientar los materiales futuros.
+
+- Pestaña **Balance** en cada sesión (solo catequista): valoración del catequista por grupo, participación y % de aciertos por grupo, y pregunta a pregunta comparando todos los grupos y cursos (`grupos.curso`, p. ej. 2026-2028).
+- Tabla `valoraciones` (grupo, sesión, texto, actualizado) y función `catequista_valorar`.
+- `respuestas.origen`: `app` o `whatsapp` (respuestas anteriores a la app).
+- Botón **«Descargar todo el histórico (Excel)»** en el inicio del catequista: CSV con todos los grupos, sesiones, respuestas (acierto, oculta, corregida, origen) y valoraciones.
+- Para un grupo nuevo: `insert into grupos(nombre, codigo, curso) values ('CONFI2028', crypt('CODIGO', gen_salt('bf')), '2028-2030');`

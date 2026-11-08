@@ -23,3 +23,4 @@ Grupo de 13 jóvenes (la mayoría de 14 años). Itinerario de 2 años, 16-17 ses
 - Sesiones 1 y 2 con guion, diálogo orientado y notas pastorales. Las orientaciones deben ser revisadas por Daniel.
 - Punto pendiente de decidir: qué ven los jóvenes de las respuestas del grupo. Se deja preparado el modelo «el catequista publica un resumen elegido».
 - Daniel decide que, tras validarlas, el grupo vea todas las respuestas (anónimas) de forma permanente: ayuda a crecer la relación del grupo. Se añaden iniciar/cerrar/reabrir sesión, corrección de respuestas por el joven al reabrir, edición u ocultación por el catequista y el botón «Validar y enviar respuestas».
+- 8-11-2026 (tarde): la Sesión 2 se aplaza a la semana siguiente. Se aprovecha para añadir el Balance, la valoración del catequista y el Excel del histórico. Las respuestas individuales de la Sesión 1 (WhatsApp) no se conservaron en archivo: solo el resumen publicado.

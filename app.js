@@ -375,8 +375,12 @@
         el("div", { class: "fecha", text: info })
       ]));
     });
+    var bHist = el("button", { class: "boton", type: "button", style: "margin-top:20px", text: "⬇ Descargar todo el histórico (Excel)" });
+    bHist.addEventListener("click", descargarHistorico);
+    app.appendChild(bHist);
+    app.appendChild(el("p", { class: "fecha", text: "Todas las sesiones, todos los grupos, todas las respuestas y tus valoraciones en un solo archivo. Guárdalo de vez en cuando como copia de seguridad." }));
   }
-  var PESTANAS = [["guion", "Guion"], ["dialogo", "Diálogo"], ["alumno", "Material del alumno"], ["respuestas", "Respuestas"]];
+  var PESTANAS = [["guion", "Guion"], ["dialogo", "Diálogo"], ["alumno", "Material del alumno"], ["respuestas", "Respuestas"], ["balance", "Balance"]];
   function catSesion(num, pest) {
     var s = CAT.material.filter(function (x) { return String(x.numero) === String(num); })[0];
     cabecera("cat"); limpiar();
@@ -396,6 +400,7 @@
     else if (pest === "dialogo") catDialogo(cont, m);
     else if (pest === "alumno") { cont.appendChild(el("p", { class: "aviso-cat", text: "Esto es lo que ven los jóvenes. El cuestionario con soluciones (al final) solo les aparece después de que valides y envíes las respuestas; durante la sesión responden en el formulario." })); materialAlumno(cont, s, CAT.clave_video); }
     else if (pest === "respuestas") catRespuestas(cont, s);
+    else if (pest === "balance") catBalance(cont, s);
   }
   function catGuion(cont, m) {
     if (m.objetivo) cont.appendChild(el("section", { class: "tarjeta" }, [el("b", { text: "Objetivo" }), el("p", { text: m.objetivo, style: "margin:6px 0 0" }), m.duracion ? el("p", { class: "fecha", text: "Duración: " + m.duracion }) : null]));
@@ -542,6 +547,84 @@
     }
     caja.appendChild(estado);
     return caja;
+  }
+  /* ---------- Balance: lo que ha llegado a los jóvenes, comparando grupos y años ---------- */
+  function nombreGrupo(g) { return g.nombre + (g.curso ? " (" + g.curso + ")" : ""); }
+  function fechaCorta(f) { return f ? new Date(String(f).length === 10 ? f + "T12:00:00" : f).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" }) : ""; }
+  function catBalance(cont, s) {
+    cont.appendChild(el("p", { class: "fecha", text: "El material dice lo que queremos transmitir; las respuestas dicen lo que ha llegado. Aquí se guarda todo, de todos los grupos y años, para valorar y mejorar el material. Los jóvenes no ven esta pestaña." }));
+    /* 1. Valoración del catequista */
+    cont.appendChild(el("h2", { text: "Valoración del catequista" }));
+    CAT.grupos.forEach(function (g) {
+      var x = datosGrupoSesion(g, s), v = x.valoracion || {};
+      var ta = el("textarea", { maxlength: "10000", placeholder: "¿Qué funcionó? ¿Qué no se entendió? ¿Qué te sorprendió de los jóvenes? ¿Qué cambiarías del material para el próximo grupo?", style: "min-height:140px" });
+      ta.value = v.texto || "";
+      var estado = el("span", { class: "fecha", text: v.actualizado ? " Guardada el " + new Date(v.actualizado).toLocaleString("es-ES", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "" });
+      var b = el("button", { class: "boton oro", type: "button", style: "margin-top:8px", text: "Guardar valoración" });
+      b.addEventListener("click", function () {
+        b.disabled = true; estado.textContent = " Guardando…";
+        rpc("catequista_valorar", { p_codigo: codCat(), p_grupo: g.nombre, p_numero: s.numero, p_texto: ta.value })
+          .then(recargarCat).then(function () { b.disabled = false; estado.textContent = " ✓ Guardada"; })
+          .catch(function () { b.disabled = false; estado.textContent = " ✗ No se ha podido guardar. Revisa la conexión"; });
+      });
+      cont.appendChild(el("section", { class: "tarjeta" }, [el("span", { class: "etiqueta", text: "Grupo " + nombreGrupo(g) }), ta, b, estado]));
+    });
+    /* 2. Participación y aciertos por grupo */
+    cont.appendChild(el("h2", { text: "¿Ha llegado el mensaje?" }));
+    var vfs = s.preguntas.filter(function (p) { return p.tipo === "vf"; });
+    CAT.grupos.forEach(function (g) {
+      var x = datosGrupoSesion(g, s);
+      var rvf = x.respuestas.filter(function (r) { return vfs.some(function (p) { return p.id === r.pregunta; }); });
+      var bien = rvf.filter(function (r) { return vfs.some(function (p) { return p.id === r.pregunta && p.correcta === r.valor; }); }).length;
+      var items = [{ valor: String(x.envios || 0), texto: "respondieron en la app" }];
+      if (rvf.length) items.push({ valor: Math.round(bien / rvf.length * 100) + " %", texto: "de aciertos en el verdadero o falso" });
+      cont.appendChild(el("section", { class: "tarjeta" }, [
+        el("span", { class: "etiqueta", text: "Grupo " + nombreGrupo(g) + (x.fecha ? " · " + fechaCorta(x.fecha) : "") }),
+        el("div", { class: "cifras", style: "margin-top:6px" }, items.map(function (i) { return el("div", { class: "cifra" }, [el("b", { text: i.valor }), el("span", { text: i.texto })]); }))
+      ]));
+      if (!x.envios && x.resumen && x.resumen.bloques && x.resumen.bloques.length) {
+        var det = el("details", { class: "tarjeta" }, [el("summary", { text: "Esta sesión se trabajó antes de la app (por WhatsApp). Ver el resumen que se hizo" })]);
+        x.resumen.bloques.forEach(function (b) { var n = bloque(b); if (n) det.appendChild(n); });
+        cont.appendChild(det);
+      }
+    });
+    /* 3. Pregunta a pregunta */
+    cont.appendChild(el("h2", { text: "Pregunta a pregunta" }));
+    s.preguntas.forEach(function (p) {
+      var c = el("section", { class: "tarjeta" }, [el("b", { text: p.orden + ". " + p.enunciado })]);
+      if (p.tipo === "vf") c.appendChild(el("p", { class: "fecha", style: "margin:4px 0", text: "Correcta: " + (p.correcta === "V" ? "verdadero" : "falso") + (p.explicacion ? ". " + p.explicacion : "") }));
+      var hay = false;
+      CAT.grupos.forEach(function (g) {
+        var rs = datosGrupoSesion(g, s).respuestas.filter(function (r) { return r.pregunta === p.id; });
+        if (!rs.length) return;
+        hay = true;
+        if (p.tipo === "vf") c.appendChild(barraFila(nombreGrupo(g), rs.filter(function (r) { return r.valor === p.correcta; }).length, rs.length));
+        else c.appendChild(el("div", { style: "margin-top:10px" }, [el("span", { class: "etiqueta", text: nombreGrupo(g) + " · " + rs.length + (rs.length === 1 ? " respuesta" : " respuestas") }),
+          el("ul", { class: "puntos" }, rs.map(function (r) { return el("li", { text: r.valor + (r.oculta && r.origen === "app" ? "  (oculta al grupo)" : "") }); }))]));
+      });
+      if (!hay) c.appendChild(el("p", { class: "fecha", text: "Sin respuestas registradas todavía." }));
+      cont.appendChild(c);
+    });
+  }
+  /* Excel con todo el histórico: todas las sesiones, todos los grupos, respuestas y valoraciones */
+  function descargarHistorico() {
+    var filas = [["grupo", "curso", "sesion", "titulo", "fecha", "n_pregunta", "pregunta", "tipo", "respuesta", "correcta", "acierto", "oculta_al_grupo", "corregida", "origen"]];
+    CAT.grupos.forEach(function (g) {
+      CAT.material.forEach(function (s) {
+        var x = datosGrupoSesion(g, s);
+        var pre = {}; s.preguntas.forEach(function (p) { pre[p.id] = p; });
+        x.respuestas.forEach(function (r) {
+          var p = pre[r.pregunta] || {};
+          filas.push([g.nombre, g.curso || "", s.numero, s.titulo, String(r.hora || "").slice(0, 10), p.orden || "", p.enunciado || "", p.tipo === "vf" ? "verdadero/falso" : "abierta",
+            r.valor, p.tipo === "vf" ? (p.correcta === "V" ? "V" : "F") : "", p.tipo === "vf" ? (r.valor === p.correcta ? "sí" : "no") : "", r.oculta ? "sí" : "", r.editado ? "sí" : "", r.origen || "app"]);
+        });
+        if (x.valoracion && x.valoracion.texto) filas.push([g.nombre, g.curso || "", s.numero, s.titulo, String(x.valoracion.actualizado || "").slice(0, 10), "", "VALORACIÓN DEL CATEQUISTA", "valoración", x.valoracion.texto, "", "", "", "", "catequista"]);
+      });
+    });
+    var txt = "﻿" + filas.map(function (f) { return f.map(function (v) { return '"' + String(v == null ? "" : v).replace(/"/g, '""') + '"'; }).join(";"); }).join("\r\n");
+    var hoy = new Date().toISOString().slice(0, 10);
+    var a = el("a", { href: URL.createObjectURL(new Blob([txt], { type: "text/csv;charset=utf-8" })), download: "CONFI_historico_" + hoy + ".csv" });
+    document.body.appendChild(a); a.click(); a.remove();
   }
   function descargarCSV(grupo, s, respuestas) {
     var enun = {}; s.preguntas.forEach(function (p) { enun[p.id] = [p.orden, p.enunciado]; });
