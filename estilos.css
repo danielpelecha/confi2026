@@ -43,6 +43,7 @@ input:focus,textarea:focus{outline:2px solid var(--oro2);border-color:var(--oro2
 .fila .pista{height:10px;background:#ece5d4;border-radius:99px;overflow:hidden;margin-top:4px}
 .fila .pista i{display:block;height:100%;background:var(--oro)}
 .aviso{border-left:5px solid var(--oro2);background:#fff8e6}
+a.tarjeta.resultado{border-left:5px solid var(--navy2)}
 .cita{border-left:5px solid var(--navy);background:#fff}
 .cita blockquote{margin:6px 0 0;font-family:Georgia,"Times New Roman",serif;font-size:18px}
 .cita cite{display:block;margin-top:8px;font-style:normal;font-weight:700;color:var(--oro)}

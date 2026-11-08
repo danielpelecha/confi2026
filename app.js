@@ -77,19 +77,34 @@
   btnSalir.addEventListener("click", function () { borrar("confi_codigo"); DATOS = null; location.hash = "#/"; pantallaAcceso(); });
 
   /* ---------- inicio ---------- */
+  function abierta(s) { return DATOS.sesion_abierta != null && Number(DATOS.sesion_abierta) === Number(s.numero); }
   function pantallaInicio() {
     limpiar();
     app.appendChild(el("h1", { text: "Hola 👋" }));
-    app.appendChild(el("p", { text: "Aquí tienes todo lo que vamos trabajando en la catequesis: los vídeos, lo que hemos aprendido juntos y las preguntas de cada sesión." }));
-    var ses = DATOS.sesiones.slice().sort(function (a, b) { return b.numero - a.numero; });
+    app.appendChild(el("p", { text: "Aquí tienes el material de cada sesión de la catequesis y, aparte, las respuestas de tu grupo." }));
+    var abiertaS = DATOS.material.filter(abierta)[0];
+    if (abiertaS && !leer("confi_enviado_" + DATOS.grupo + "_" + abiertaS.id)) {
+      app.appendChild(el("a", { class: "boton oro", href: "#/sesion/" + abiertaS.numero + "/responder", style: "text-align:center;text-decoration:none;margin:12px 0", text: "✍️  Responder a las preguntas de la Sesión " + abiertaS.numero }));
+    }
+    app.appendChild(el("h2", { text: "📘 Material de catequesis" }));
+    var ses = DATOS.material.slice().sort(function (a, b) { return a.numero - b.numero; });
     if (!ses.length) app.appendChild(el("p", { class: "vacio", text: "Todavía no hay sesiones." }));
     ses.forEach(function (s) {
-      var hecho = leer("confi_enviado_" + s.id);
       app.appendChild(el("a", { class: "tarjeta", href: "#/sesion/" + s.numero }, [
         el("span", { class: "etiqueta", text: "Sesión " + s.numero }),
-        s.formulario_abierto && !hecho ? el("span", { class: "nueva", text: "Responde" }) : null,
+        abierta(s) ? el("span", { class: "nueva", text: "Hoy" }) : null,
         el("h2", { text: s.titulo, style: "margin:2px 0 4px" }),
-        el("div", { class: "fecha", text: fechaBonita(s.fecha) })
+        s.contenido && s.contenido.objetivo ? el("div", { class: "fecha", text: s.contenido.objetivo }) : null
+      ]));
+    });
+    app.appendChild(el("h2", { text: "📊 Respuestas del grupo " + DATOS.grupo }));
+    var res = DATOS.resultados.slice().sort(function (a, b) { return a.sesion - b.sesion; });
+    if (!res.length) app.appendChild(el("p", { class: "fecha", text: "Todavía no hay respuestas de tu grupo." }));
+    res.forEach(function (r) {
+      app.appendChild(el("a", { class: "tarjeta resultado", href: "#/respuestas/" + r.sesion }, [
+        el("span", { class: "etiqueta", text: "Sesión " + r.sesion + (r.fecha ? " · " + fechaBonita(r.fecha) : "") }),
+        el("h2", { text: r.titulo, style: "margin:2px 0 4px" }),
+        el("div", { class: "fecha", text: "Lo que respondió el grupo" })
       ]));
     });
   }
@@ -158,27 +173,57 @@
 
   /* ---------- sesión ---------- */
   function pantallaSesion(num) {
-    var s = DATOS.sesiones.filter(function (x) { return String(x.numero) === String(num); })[0];
+    var s = DATOS.material.filter(function (x) { return String(x.numero) === String(num); })[0];
     limpiar();
     if (!s) { app.appendChild(el("p", { class: "vacio", text: "No encuentro esa sesión." })); return; }
-    app.appendChild(el("p", { class: "migas" }, [el("a", { href: "#/", text: "← Todas las sesiones" })]));
-    app.appendChild(el("span", { class: "etiqueta", text: "Sesión " + s.numero + " · " + fechaBonita(s.fecha) }));
+    app.appendChild(el("p", { class: "migas" }, [el("a", { href: "#/", text: "← Inicio" })]));
+    app.appendChild(el("span", { class: "etiqueta", text: "📘 Material · Sesión " + s.numero }));
     app.appendChild(el("h1", { text: s.titulo }));
     if (s.contenido && s.contenido.lema) app.appendChild(el("p", { class: "lema", text: s.contenido.lema }));
-    if (s.formulario_abierto) app.appendChild(el("a", { class: "boton oro", href: "#/sesion/" + s.numero + "/responder", style: "text-align:center;text-decoration:none;margin:8px 0 16px" , text: leer("confi_enviado_" + s.id) ? "Ya has respondido ✓ (ver de nuevo)" : "✍️  Responder a las preguntas de hoy" }));
+    if (s.contenido && s.contenido.objetivo) app.appendChild(el("section", { class: "tarjeta" }, [el("b", { text: "Objetivo" }), el("p", { text: s.contenido.objetivo, style: "margin:6px 0 0" })]));
+    if (abierta(s)) app.appendChild(el("a", { class: "boton oro", href: "#/sesion/" + s.numero + "/responder", style: "text-align:center;text-decoration:none;margin:8px 0 16px", text: leer("confi_enviado_" + DATOS.grupo + "_" + s.id) ? "Ya has respondido ✓ (ver de nuevo)" : "✍️  Responder a las preguntas de hoy" }));
     if (s.video) app.appendChild(bloqueVideo(s.video));
     ((s.contenido && s.contenido.bloques) || []).forEach(function (b) { var n = bloque(b); if (n) app.appendChild(n); });
-    if (!s.formulario_abierto && s.preguntas.length) app.appendChild(repaso(s));
-    if (s.sobres.length) app.appendChild(sobres(s));
+    if (!abierta(s) && s.preguntas.length) app.appendChild(actividades(s));
   }
-  function repaso(s) {
-    var sec = el("section", null, [el("h2", { text: "Repasa el cuestionario" }), el("p", { class: "fecha", text: "Pon a prueba lo que recuerdas. Nadie ve tus respuestas." })]);
-    s.preguntas.filter(function (p) { return p.tipo === "vf"; }).forEach(function (p) { sec.appendChild(preguntaVF(p, true)); });
+  function actividades(s) {
+    var sec = el("section", null, [el("h2", { text: "Actividades de la sesión" })]);
+    var vf = s.preguntas.filter(function (p) { return p.tipo === "vf"; });
+    var txt = s.preguntas.filter(function (p) { return p.tipo !== "vf"; });
+    if (vf.length) {
+      sec.appendChild(el("p", { class: "fecha", text: "Cuestionario de verdadero o falso. Pon a prueba lo que sabes: al responder verás si has acertado. Nadie ve tus respuestas." }));
+      vf.forEach(function (p) { sec.appendChild(preguntaVF(p, true)); });
+    }
+    if (txt.length) {
+      sec.appendChild(el("h2", { text: "Para pensar" }));
+      sec.appendChild(el("ul", { class: "puntos" }, txt.map(function (p) { return el("li", { text: p.enunciado }); })));
+    }
     return sec;
   }
-  function sobres(s) {
+  function pantallaRespuestas(num) {
+    var r = DATOS.resultados.filter(function (x) { return String(x.sesion) === String(num); })[0];
+    limpiar();
+    app.appendChild(el("p", { class: "migas" }, [el("a", { href: "#/", text: "← Inicio" })]));
+    if (!r) { app.appendChild(el("p", { class: "vacio", text: "Todavía no hay respuestas de tu grupo en esta sesión." })); return; }
+    app.appendChild(el("span", { class: "etiqueta", text: "📊 Respuestas del grupo " + DATOS.grupo + " · Sesión " + r.sesion }));
+    app.appendChild(el("h1", { text: r.titulo }));
+    if (r.fecha) app.appendChild(el("p", { class: "fecha", text: fechaBonita(r.fecha) }));
+    app.appendChild(el("p", { text: "Lo que respondisteis entre todos. Siempre de forma anónima." }));
+    var bloques = (r.contenido && r.contenido.bloques) || [];
+    if (!bloques.length) {
+      if (r.envios) app.appendChild(bloque({ tipo: "cifras", titulo: "Participación", items: [{ valor: String(r.envios), texto: r.envios === 1 ? "joven ha respondido" : "jóvenes han respondido" }] }));
+      var vfs = r.vf.filter(function (v) { return v.total > 0; });
+      if (vfs.length) app.appendChild(el("section", { class: "tarjeta" }, [el("b", { text: "Aciertos en el cuestionario" })].concat(vfs.map(function (v) {
+        return el("div", { class: "fila" }, [el("div", { class: "txt" }, [el("span", { text: v.enunciado }), el("b", { text: v.aciertos + " de " + v.total })]), el("div", { class: "pista" }, [el("i", { style: "width:" + Math.round(v.aciertos / v.total * 100) + "%" })])]);
+      }))));
+      app.appendChild(el("p", { class: "fecha", text: "Tu catequista completará este apartado con el resumen de la sesión." }));
+    }
+    bloques.forEach(function (b) { var n = bloque(b); if (n) app.appendChild(n); });
+    if (r.sobres.length) app.appendChild(sobres(r.sobres));
+  }
+  function sobres(lista) {
     var porNombre = {};
-    s.sobres.forEach(function (x) { (porNombre[x.nombre] = porNombre[x.nombre] || []).push(x.cualidad); });
+    lista.forEach(function (x) { (porNombre[x.nombre] = porNombre[x.nombre] || []).push(x.cualidad); });
     var sec = el("section", null, [el("h2", { text: "El sobre digital ✉" }), el("p", { class: "fecha", text: "Lo que vuestros compañeros ven en cada uno. Sin decir quién lo escribió." })]);
     Object.keys(porNombre).sort(function (a, b) { return a.localeCompare(b, "es"); }).forEach(function (n) {
       sec.appendChild(el("details", { class: "tarjeta sobre" }, [el("summary", { text: n }), el("ul", { class: "puntos" }, porNombre[n].map(function (c) { return el("li", { text: c }); }))]));
@@ -215,9 +260,9 @@
 
   /* ---------- formulario ---------- */
   function pantallaResponder(num) {
-    var s = DATOS.sesiones.filter(function (x) { return String(x.numero) === String(num); })[0];
+    var s = DATOS.material.filter(function (x) { return String(x.numero) === String(num); })[0];
     limpiar();
-    if (!s || !s.formulario_abierto) { app.appendChild(el("p", { class: "vacio", text: "Las preguntas de esta sesión ya están cerradas." })); return; }
+    if (!s || !abierta(s)) { app.appendChild(el("p", { class: "vacio", text: "Las preguntas de esta sesión ya están cerradas." })); return; }
     app.appendChild(el("p", { class: "migas" }, [el("a", { href: "#/sesion/" + s.numero, text: "← Volver a la sesión" })]));
     app.appendChild(el("h1", { text: "Tus respuestas · Sesión " + s.numero }));
     app.appendChild(el("p", { text: "Son anónimas: nadie sabrá quién ha escrito cada respuesta. Contesta con sinceridad." }));
@@ -243,7 +288,7 @@
       if (faltan.length) { msg.textContent = "Te falta responder " + faltan.length + (faltan.length === 1 ? " pregunta." : " preguntas."); return; }
       boton.disabled = true; boton.textContent = "Enviando…"; msg.textContent = "";
       rpc("enviar_respuestas", { p_codigo: leer("confi_codigo"), p_sesion: s.id, p_respuestas: resp }).then(function () {
-        guardar("confi_enviado_" + s.id, "1");
+        guardar("confi_enviado_" + DATOS.grupo + "_" + s.id, "1");
         Object.keys(cajasVF).forEach(function (k) { cajasVF[k]._corregir(resp[k]); });
         form.querySelectorAll("textarea").forEach(function (t) { t.disabled = true; });
         boton.remove();
@@ -276,9 +321,9 @@
     app.appendChild(form); app.appendChild(res);
   }
   function pintarPanel(res, d) {
-    var csv = [["sesion", "pregunta", "enunciado", "envio", "respuesta", "hora"]];
+    var csv = [["grupo", "sesion", "pregunta", "enunciado", "envio", "respuesta", "hora"]];
     d.slice().reverse().forEach(function (s) {
-      res.appendChild(el("h2", { text: "Sesión " + s.sesion + " · " + s.titulo }));
+      res.appendChild(el("h2", { text: s.grupo + " · Sesión " + s.sesion + " · " + s.titulo }));
       res.appendChild(el("p", { class: "fecha", text: s.envios + (s.envios === 1 ? " joven ha respondido en la app" : " jóvenes han respondido en la app") }));
       s.preguntas.forEach(function (p) {
         var c = el("div", { class: "tarjeta" }, [el("b", { text: p.orden + ". " + p.enunciado })]);
@@ -289,7 +334,7 @@
           if (!p.respuestas.length) c.appendChild(el("p", { class: "fecha", text: "Sin respuestas todavía." }));
           else c.appendChild(el("table", { class: "tabla" }, p.respuestas.map(function (r) { return el("tr", null, [el("td", { class: "h", text: "#" + r.envio }), el("td", { text: r.valor })]); })));
         }
-        p.respuestas.forEach(function (r) { csv.push([s.sesion, p.orden, p.enunciado, r.envio, r.valor, r.hora]); });
+        p.respuestas.forEach(function (r) { csv.push([s.grupo, s.sesion, p.orden, p.enunciado, r.envio, r.valor, r.hora]); });
         res.appendChild(c);
       });
     });
@@ -319,6 +364,7 @@
     btnSalir.hidden = false;
     if (h[0] === "sesion" && h[2] === "responder") return pantallaResponder(h[1]);
     if (h[0] === "sesion") return pantallaSesion(h[1]);
+    if (h[0] === "respuestas") return pantallaRespuestas(h[1]);
     pantallaInicio();
   }
   window.addEventListener("hashchange", router);
