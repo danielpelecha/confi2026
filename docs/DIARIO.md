@@ -12,3 +12,7 @@ Grupo de 13 jóvenes (la mayoría de 14 años). Itinerario de 2 años, 16-17 ses
 - Primera sesión con la app: los jóvenes responden dentro de la app, de forma anónima.
 - Textos: Mateo 14,22-33 (Pedro sobre el agua) y Marcos 9,24 («Creo, pero ayuda mi falta de fe»).
 - Dinámica: el lazarillo.
+- Vídeo de introducción «Creer es fiarse» (NotebookLM, 4:59). En pantalla la pregunta final es «¿Te atreves a fiarte sin miedo?»; la narración dice «aunque a veces tengas dudas, como Pedro». Validado por el catequista.
+- Cierre: vídeo de YouTube insertado (no descargado) «Juan Pablo II No, no tengáis miedo de mirarlo a Él», canal *Juntos con MARIA vivamos en MISERICORDIA*, fragmento 0:00-2:10 — https://www.youtube.com/watch?v=Mkmci96h-Ho
+  - Pendiente: pedir permiso al canal o a Vatican Media para tenerlo como archivo propio (útil también para la futura sesión sobre los santos).
+  - Dato verificado: la frase «¡No temáis! ¡Abrid de par en par las puertas a Cristo!» es de la homilía de inicio de pontificado (22-10-1978); no aparece en las homilías de las primeras JMJ (Roma 1986, Buenos Aires 1987).

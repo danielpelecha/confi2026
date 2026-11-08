@@ -166,6 +166,11 @@
         return el("div", { class: "fila" }, [el("div", { class: "txt" }, [el("span", { text: i.texto }), el("b", { text: i.valor + " de " + b.total })]), el("div", { class: "pista" }, [el("i", { style: "width:" + Math.round(i.valor / b.total * 100) + "%" })])]);
       }))]);
       case "nube": return el("section", null, [t, el("div", { class: "nube" }, b.items.map(function (w) { return el("span", { text: w }); }))]);
+      case "youtube":
+        var q = "?rel=0&modestbranding=1&playsinline=1" + (b.inicio ? "&start=" + b.inicio : "") + (b.fin ? "&end=" + b.fin : "");
+        return el("section", null, [t, b.texto ? el("p", { text: b.texto }) : null,
+          el("div", { class: "video" }, [el("iframe", { src: "https://www.youtube-nocookie.com/embed/" + encodeURIComponent(b.id) + q, title: b.tituloVideo || "Vídeo", allow: "encrypted-media; picture-in-picture; fullscreen", allowfullscreen: "", loading: "lazy", style: "width:100%;height:100%;border:0" })]),
+          el("p", { class: "fuente" }, ["📺 Fuente: «" + b.tituloVideo + "», del canal ", el("b", { text: b.canal }), " (YouTube)." + (b.tramo ? " Fragmento " + b.tramo + "." : "") + " ", el("a", { href: b.url, target: "_blank", rel: "noopener", text: "Ver el vídeo completo" })])]);
       case "lista": return el("section", null, [t, b.texto ? el("p", { class: "fecha", text: b.texto }) : null, el("ul", { class: "puntos" }, b.items.map(function (w) { return el("li", { text: w }); }))]);
       default: return null;
     }
